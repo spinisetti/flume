@@ -33,8 +33,6 @@ public class Log4JInjector {
   }
 
   public static void main(String argv[]) {
-    // String curDir = System.getProperty("user.dir");
-    // System.out.println("pwd == " + curDir);
 
     if (argv.length < 2) {
       usage();

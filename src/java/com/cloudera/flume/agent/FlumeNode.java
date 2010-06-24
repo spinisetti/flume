@@ -193,7 +193,7 @@ public class FlumeNode implements Reportable {
    * This hook makes it easy for web apps and jsps to get the current FlumeNode
    * instance. This is used to test the FlumeNode related jsps.
    */
-  public static FlumeNode getInstance() {
+  public synchronized static FlumeNode getInstance() {
     if (instance == null) {
       instance = new FlumeNode(FlumeConfiguration.get());
     }

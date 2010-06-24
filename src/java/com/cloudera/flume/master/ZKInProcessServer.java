@@ -238,9 +238,15 @@ public class ZKInProcessServer {
       throw new IOException("Couldn't create idfile " + idfile);
     }
     LOG.warn("Creating " + idfile);
-    FileWriter fw = new FileWriter(idfile);
-    fw.write(Integer.valueOf(myid).toString() + "\n");
-    fw.close();
+
+    FileWriter fw = null;
+    try {
+      fw = new FileWriter(idfile);
+      fw.write(Integer.valueOf(myid).toString() + "\n");
+    } finally {
+      if (fw != null)
+        fw.close();
+    }
   }
 
   /**

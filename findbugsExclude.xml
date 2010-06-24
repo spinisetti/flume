@@ -138,4 +138,12 @@
        <Method name="flushMemoryExhaust" />
    </Match>
 
+   <!-- this is purposely supposed to be an endless loop -->
+   <Match>
+     <Class name="com.cloudera.flume.handlers.log4j.Log4JInjector" />
+     <Bub pattern="IL_INFINITE_LOOP" />
+     <Method name="main" />
+   </Match>
+
+
 </FindBugsFilter>
