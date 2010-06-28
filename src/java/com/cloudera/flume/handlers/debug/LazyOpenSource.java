@@ -60,4 +60,19 @@ public class LazyOpenSource<S extends EventSource> extends EventSource.Base {
     src.close();
 
   }
+
+  /**
+   * returns true if logically open (open called on lazy, but not necessary
+   * actually open)
+   */
+  public synchronized boolean isLogicallyOpen() {
+    return logicallyOpen;
+  }
+
+  /**
+   * Returns true if actually open (laziliy and actually)F
+   */
+  public synchronized boolean isActuallyOpen() {
+    return actuallyOpen;
+  }
 }

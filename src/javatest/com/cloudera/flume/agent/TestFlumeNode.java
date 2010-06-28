@@ -36,6 +36,7 @@ import com.cloudera.flume.conf.thrift.FlumeConfigData;
 import com.cloudera.flume.core.Event;
 import com.cloudera.flume.core.EventImpl;
 import com.cloudera.flume.core.EventSource;
+import com.cloudera.flume.handlers.debug.LazyOpenSource;
 import com.cloudera.flume.handlers.debug.NullSink;
 import com.cloudera.flume.handlers.syslog.SyslogTcpSourceThreads;
 import com.cloudera.flume.master.CommandManager;
@@ -169,6 +170,7 @@ public class TestFlumeNode extends TestCase {
    * This tests to make sure that openLoadNode opens newly specified sources,
    * and closes previous sources when a new one is specified.
    */
+  @SuppressWarnings("unchecked")
   public void testOpenCloseOpenIsOpen() throws IOException {
     class IsOpenSource extends EventSource.Base {
       boolean isOpen = false;
@@ -197,13 +199,18 @@ public class TestFlumeNode extends TestCase {
     node.openLoadNode(prev, new NullSink());
     node.getSource().next(); // force lazy source to open
     for (int i = 0; i < 10; i++) {
+      LazyOpenSource<EventSource> lazyOpenSource = (LazyOpenSource<EventSource>) node
+          .getSource();
+      assertTrue(lazyOpenSource.isLogicallyOpen());
 
-      assertTrue(prev.isOpen);
+      // next source
       IsOpenSource cur = new IsOpenSource();
       node.openLoadNode(cur, new NullSink());
       node.getSource().next(); // force lazy source to open.
       assertFalse(prev.isOpen);
-      assertTrue(cur.isOpen);
+      LazyOpenSource<EventSource> lazyOpenSource2 = (LazyOpenSource<EventSource>) node
+          .getSource();
+      assertTrue(lazyOpenSource2.isLogicallyOpen());
       prev = cur;
     }
   }
