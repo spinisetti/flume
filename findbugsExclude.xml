@@ -60,10 +60,17 @@
 
    <!-- GC is used legitimately here, and System.exit -->
    <Match>
-     <Class name="com.cloudera.flume.agent.MemoryMonitor\$\d+" />
-       <Bug code="DM_GC,DM_EXIT" />
+     <Class name="com.cloudera.flume.agent.MemoryMonitor$2" />
+       <Bug code="DM_EXIT" />
        <Method name="memoryUsageLow" />
    </Match>
+
+   <Match>
+     <Class name="com.cloudera.flume.agent.MemoryMonitor$2" />
+       <Bug code="DM_GC" />
+       <Method name="memoryUsageLow" />
+   </Match>
+
 
    <!-- data is checked for not null by Preconditions -->
    <Match>
