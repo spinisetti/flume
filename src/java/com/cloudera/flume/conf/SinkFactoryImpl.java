@@ -100,15 +100,15 @@ public class SinkFactoryImpl extends SinkFactory {
       { "agentDFOSink", AgentSink.dfoBuilder() },
       { "agentBESink", AgentSink.beBuilder() },
 
-      { "agentFailoverSink", AgentSink.dfoBuilder() },
-      { "agentBestEffortSink", AgentSink.beBuilder() },
+      // { "agentFailoverSink", AgentSink.dfoBuilder() },
+      // { "agentBestEffortSink", AgentSink.beBuilder() },
 
       { "agentE2EChain", AgentFailChainSink.e2eBuilder() },
       { "agentDFOChain", AgentFailChainSink.dfoBuilder() },
       { "agentBEChain", AgentFailChainSink.beBuilder() },
 
       // autoE2EChain, autoDFOChain and autoBEChains are essentially node
-      // specific "macros", and use let expresion shadowing
+      // specific "macros".
       { "autoBEChain", EventSink.StubSink.builder() },
       { "autoDFOChain", EventSink.StubSink.builder() },
       { "autoE2EChain", EventSink.StubSink.builder() },

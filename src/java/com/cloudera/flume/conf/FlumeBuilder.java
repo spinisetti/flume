@@ -402,20 +402,27 @@ public class FlumeBuilder {
     }
   }
 
+  public static Pair<String, List<String>> getTypeAndArgs(CommonTree t)
+      throws FlumeSpecException {
+    List<CommonTree> children = (List<CommonTree>) new ArrayList<CommonTree>(t
+        .getChildren());
+    String sinkType = children.remove(0).getText();
+    List<String> args = new ArrayList<String>();
+    for (CommonTree tr : children) {
+      args.add(buildArg(tr));
+    }
+    return new Pair<String, List<String>>(sinkType, args);
+  }
+
   @SuppressWarnings("unchecked")
   static EventSink buildEventSink(Context context, CommonTree t,
       SinkFactory sinkFactory) throws FlumeSpecException {
     ASTNODE type = ASTNODE.valueOf(t.getText()); // convert to enum
     switch (type) {
     case SINK:
-
-      List<CommonTree> children = (List<CommonTree>) new ArrayList<CommonTree>(
-          t.getChildren());
-      String sinkType = children.remove(0).getText();
-      List<String> args = new ArrayList<String>();
-      for (CommonTree tr : children) {
-        args.add(buildArg(tr));
-      }
+      Pair<String, List<String>> p = getTypeAndArgs(t);
+      String sinkType = p.getLeft();
+      List<String> args = p.getRight();
 
       EventSink snk = sinkFactory.getSink(context, sinkType, args
           .toArray(new String[0]));

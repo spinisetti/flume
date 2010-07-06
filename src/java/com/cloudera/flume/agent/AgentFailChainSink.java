@@ -173,7 +173,7 @@ public class AgentFailChainSink extends EventSink.Base {
     if (list == null || list.size() == 0) {
       String sink =
           String.format("tsink(\"%s\",%d)", FlumeConfiguration.get()
-              .getCollectorHost(), FlumeConfiguration.get().getCollectorPort());
+          .getCollectorHost(), FlumeConfiguration.get().getCollectorPort());
       thriftified.add(sink);
       return thriftified;
     }

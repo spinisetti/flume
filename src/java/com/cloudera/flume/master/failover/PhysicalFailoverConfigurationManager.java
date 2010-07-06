@@ -31,6 +31,7 @@ import org.antlr.runtime.tree.CommonTree;
 import org.apache.log4j.Logger;
 
 import com.cloudera.flume.conf.FlumeBuilder;
+import com.cloudera.flume.conf.FlumeConfiguration;
 import com.cloudera.flume.conf.FlumePatterns;
 import com.cloudera.flume.conf.FlumeSpecException;
 import com.cloudera.flume.conf.FlumeSpecGen;
@@ -39,26 +40,28 @@ import com.cloudera.flume.master.ConfigurationManager;
 import com.cloudera.flume.master.TranslatingConfigurationManager;
 import com.cloudera.flume.master.Translator;
 import com.cloudera.flume.master.availability.FailoverChainManager;
+import com.cloudera.util.NetUtils;
+import com.cloudera.util.Pair;
 import com.google.common.base.Preconditions;
 
 /**
  * This translates autoXXXsinks into full configurations.
  */
-public class FailoverConfigurationManager extends
+public class PhysicalFailoverConfigurationManager extends
     TranslatingConfigurationManager implements Translator {
   final public static Logger LOG = Logger
-      .getLogger(FailoverConfigurationManager.class);
+      .getLogger(PhysicalFailoverConfigurationManager.class);
   FailoverChainManager failchainMan;
   final public static String NAME = "FailoverTranslator";
 
-  final public static String AUTO_BE = "autoBEChain";
-  final public static String AUTO_DFO = "autoDFOChain";
-  final public static String AUTO_E2E = "autoE2EChain";
+  final public static String PHYSICAL_BE = "agentBEChain";
+  final public static String PHYSICAL_DFO = "agentDFOChain";
+  final public static String PHYSICAL_E2E = "agentE2EChain";
 
   /**
    * Create Failover chain translating manager.
    */
-  public FailoverConfigurationManager(ConfigurationManager parent,
+  public PhysicalFailoverConfigurationManager(ConfigurationManager parent,
       ConfigurationManager self, FailoverChainManager fcMan) {
     super(parent, self);
     Preconditions.checkArgument(fcMan != null);
@@ -75,27 +78,18 @@ public class FailoverConfigurationManager extends
   }
 
   /**
-   * Sources that are collectors are not translated, however they are registered
+   * This does not translate sources at all.
    */
   @Override
   public String translateSource(String lnode, String source)
       throws FlumeSpecException {
     Preconditions.checkArgument(lnode != null);
     Preconditions.checkArgument(source != null);
-
-    // register the source.
-    if ("autoCollectorSource".equals(source)) {
-      failchainMan.addCollector(lnode);
-      source = "logicalSource"; // convert to logical source.
-    } else {
-      // remove if was previously a collector
-      failchainMan.removeCollector(lnode);
-    }
     return source;
   }
 
   /**
-   * This translates all autoBEChain, autoE2EChain, and autoDFOChain into low
+   * This translates all agentBEChain, agentE2EChain, and agentDFOChain into low
    * level sinks taking the failover chain mangers info into account.
    */
   @Override
@@ -106,10 +100,10 @@ public class FailoverConfigurationManager extends
 
     String xsink;
     try {
-      List<String> failovers = failchainMan.getFailovers(lnode);
-      xsink = FlumeSpecGen.genEventSink(substBEChains(sink, failovers));
-      xsink = FlumeSpecGen.genEventSink(substDFOChainsNoLet(xsink, failovers));
-      xsink = FlumeSpecGen.genEventSink(substE2EChains(xsink, failovers));
+
+      xsink = FlumeSpecGen.genEventSink(substBEChains(sink));
+      xsink = FlumeSpecGen.genEventSink(substDFOChainsNoLet(xsink));
+      xsink = FlumeSpecGen.genEventSink(substE2EChains(xsink));
       return xsink;
     } catch (RecognitionException e) {
       throw new FlumeSpecException(e.getMessage());
@@ -117,20 +111,49 @@ public class FailoverConfigurationManager extends
   }
 
   /**
+   * take a list of collectors and convert into a list of thrift sinks
+   */
+  public static List<String> convertArgsToRpc(int defaultPort, List<String> list) {
+    ArrayList<String> rpced = new ArrayList<String>();
+
+    if (list == null || list.size() == 0) {
+      String sink = String.format("rpcSink(\"%s\",%d)", FlumeConfiguration
+          .get().getCollectorHost(), defaultPort);
+      rpced.add(sink);
+      return rpced;
+    }
+
+    for (String socket : list) {
+      Pair<String, Integer> sock = NetUtils.parseHostPortPair(socket,
+          defaultPort);
+      String collector = sock.getLeft();
+      int port = sock.getRight();
+      // This needs to be a physical address/node, not a logical node.
+      String sink = String.format("rpcSink(\"%s\",%d)", collector, port);
+      rpced.add(sink);
+    }
+    return rpced;
+  }
+
+  /**
    * Takes a full sink specification and substitutes 'autoBEChain' with an
    * expanded best effort failover chain.
    */
-  static CommonTree substBEChains(String sink, List<String> collectors)
-      throws RecognitionException, FlumeSpecException {
-
-    PatternMatch bePat = recursive(var("be", FlumePatterns.sink(AUTO_BE)));
+  static CommonTree substBEChains(String sink) throws RecognitionException,
+      FlumeSpecException {
+    // get collectors from arguments.
+    PatternMatch bePat = recursive(var("be", FlumePatterns.sink(PHYSICAL_BE)));
     CommonTree sinkTree = FlumeBuilder.parseSink(sink);
     Map<String, CommonTree> beMatches = bePat.match(sinkTree);
-
+    CommonTree beSink = beMatches.get("be");
+    List<String> args = FlumeBuilder.getTypeAndArgs(beSink).getRight();
+    List<String> rpcs = convertArgsToRpc(FlumeConfiguration.get()
+        .getCollectorPort(), args);
     ArrayList<String> collSnks = new ArrayList<String>();
-    for (String coll : collectors) {
-      collSnks.add("{ lazyOpen => logicalSink(\"" + coll + "\") }");
+    for (String coll : rpcs) {
+      collSnks.add("{ lazyOpen => " + coll + "}");
     }
+    // add a null sink at the end for when all the sinks fail.
     collSnks.add("null");
 
     if (beMatches == null) {
@@ -171,9 +194,9 @@ public class FailoverConfigurationManager extends
    * because of no sharing). Unfortunately 'let's end up being very tricky to
    * use in the cases where failures occur, and need more thought.
    */
-  static CommonTree substDFOChainsNoLet(String sink, List<String> collectors)
+  static CommonTree substDFOChainsNoLet(String sink)
       throws RecognitionException, FlumeSpecException {
-    PatternMatch dfoPat = recursive(var("dfo", FlumePatterns.sink(AUTO_DFO)));
+    PatternMatch dfoPat = recursive(var("dfo", FlumePatterns.sink(PHYSICAL_DFO)));
 
     CommonTree sinkTree = FlumeBuilder.parseSink(sink);
     Map<String, CommonTree> dfoMatches = dfoPat.match(sinkTree);
@@ -181,13 +204,23 @@ public class FailoverConfigurationManager extends
       return sinkTree;
     }
 
+    // get collectors from arguments.
+    CommonTree dfoSink = dfoMatches.get("be");
+    List<String> args = FlumeBuilder.getTypeAndArgs(dfoSink).getRight();
+    List<String> rpcs = convertArgsToRpc(FlumeConfiguration.get()
+        .getCollectorPort(), args);
+    ArrayList<String> collSnks = new ArrayList<String>();
+    for (String coll : rpcs) {
+      collSnks.add("{ lazyOpen => " + coll + "}");
+    }
+
     while (dfoMatches != null) {
       // found a autoBEChain, replace it with the chain.
       CommonTree dfoTree = dfoMatches.get("dfo");
 
       // All the logical sinks are lazy individually
-      CommonTree dfoPrimaryChain = buildFailChainAST(
-          "{ lazyOpen => logicalSink(\"%s\") }", collectors);
+      CommonTree dfoPrimaryChain = buildFailChainAST("{ lazyOpen => %s }",
+          collSnks);
       // Check if dfo is null
       if (dfoPrimaryChain == null) {
         dfoPrimaryChain = FlumeBuilder.parseSink("fail(\"no collectors\")");
@@ -266,10 +299,10 @@ public class FailoverConfigurationManager extends
    * Takes a full sink specification and substitutes 'autoE2EChain' with an
    * expanded wal+end2end ack chain.
    */
-  static CommonTree substE2EChains(String sink, List<String> collectors)
-      throws RecognitionException, FlumeSpecException {
+  static CommonTree substE2EChains(String sink) throws RecognitionException,
+      FlumeSpecException {
 
-    PatternMatch e2ePat = recursive(var("e2e", FlumePatterns.sink(AUTO_E2E)));
+    PatternMatch e2ePat = recursive(var("e2e", FlumePatterns.sink(PHYSICAL_E2E)));
     CommonTree sinkTree = FlumeBuilder.parseSink(sink);
     Map<String, CommonTree> e2eMatches = e2ePat.match(sinkTree);
 
@@ -278,14 +311,23 @@ public class FailoverConfigurationManager extends
       return sinkTree;
     }
 
+    // get collectors from arguments.
+    CommonTree e2eSink = e2eMatches.get("e2e");
+    List<String> args = FlumeBuilder.getTypeAndArgs(e2eSink).getRight();
+    List<String> rpcs = convertArgsToRpc(FlumeConfiguration.get()
+        .getCollectorPort(), args);
+    ArrayList<String> collSnks = new ArrayList<String>();
+    for (String coll : rpcs) {
+      collSnks.add("{ lazyOpen => " + coll + "}");
+    }
+
     while (e2eMatches != null) {
       // found a autoBEChain, replace it with the chain.
       CommonTree beTree = e2eMatches.get("e2e");
 
       // generate
       CommonTree beFailChain = buildFailChainAST(
-          "{ lazyOpen => { stubbornAppend => logicalSink(\"%s\") } }  ",
-          collectors);
+          "{ lazyOpen => { stubbornAppend => %s } }  ", collSnks);
 
       // Check if beFailChain is null
       if (beFailChain == null) {
