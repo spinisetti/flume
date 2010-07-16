@@ -19,8 +19,6 @@ package com.cloudera.flume.core;
 
 import java.io.IOException;
 
-import com.cloudera.flume.master.StatusManager.NodeState;
-
 /**
  * This is an edge that connect a source to a sink. This is an abstract class
  * because we can have many different properties for the connection between
@@ -33,6 +31,10 @@ import com.cloudera.flume.master.StatusManager.NodeState;
  * allows for multiple threads of consumers.
  */
 abstract public class Driver {
+
+  public enum DriverState {
+    HELLO, RUNNING, STOPPED, ERROR
+  }
 
   abstract public EventSource getSource();
 
@@ -48,7 +50,7 @@ abstract public class Driver {
 
   abstract public void join() throws InterruptedException;
 
-  abstract public NodeState getState();
+  abstract public DriverState getState();
 
   abstract public void registerListener(DriverListener listener);
 

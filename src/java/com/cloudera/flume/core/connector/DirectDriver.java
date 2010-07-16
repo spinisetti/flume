@@ -28,7 +28,6 @@ import com.cloudera.flume.core.DriverListener;
 import com.cloudera.flume.core.Event;
 import com.cloudera.flume.core.EventSink;
 import com.cloudera.flume.core.EventSource;
-import com.cloudera.flume.master.StatusManager.NodeState;
 import com.google.common.base.Preconditions;
 
 /**
@@ -46,7 +45,7 @@ public class DirectDriver extends Driver {
   EventSource source;
   PumperThread thd;
   Exception error = null;
-  NodeState state = NodeState.HELLO;
+  DriverState state = DriverState.HELLO;
   final List<DriverListener> listeners = new ArrayList<DriverListener>();
 
   public DirectDriver(EventSource src, EventSink snk) {
@@ -80,7 +79,7 @@ public class DirectDriver extends Driver {
       try {
         stopped = false;
         error = null;
-        state = NodeState.ACTIVE;
+        state = DriverState.RUNNING;
         LOG.debug("Starting driver " + DirectDriver.this);
         fireStart();
 
@@ -95,13 +94,13 @@ public class DirectDriver extends Driver {
         // Catches all exceptions or throwables. This is a separate thread
         error = e1;
         stopped = true;
-        state = NodeState.ERROR;
+        state = DriverState.ERROR;
         LOG.error("Driving src/sink failed! " + DirectDriver.this + " because "
             + e1.getMessage());
         fireError(e1);
         return;
       }
-      state = NodeState.IDLE;
+      state = DriverState.STOPPED;
       LOG.debug("Driver completed: " + DirectDriver.this);
       fireStop();
     }
@@ -160,7 +159,7 @@ public class DirectDriver extends Driver {
   }
 
   @Override
-  public NodeState getState() {
+  public DriverState getState() {
     return state;
   }
 
