@@ -1,0 +1,6 @@
+This rabbitmq/amqp flume plugin requires a GPL jar to work.  We are
+keeping flume ASF compatible so are not including the files.  As of
+7/19/2010, the required jar (rabbitmq-client.jar) could be found here:
+
+http://www.rabbitmq.com/java-client.html
+
