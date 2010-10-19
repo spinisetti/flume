@@ -679,4 +679,38 @@ public class TestCollectorSink {
     ReportEvent rptb = ReportManager.get().getReportable("bar").getMetrics();
     assertEquals(1, (long) rptb.getLongMetric("bar"));
   }
+
+  /**
+   * This tests append to make sure it can have a fan out with two different
+   * collectorSinks
+   * 
+   * @throws IOException
+   * @throws FlumeSpecException
+   * @throws InterruptedException
+   */
+  @Test
+  public void testMultiCollectorSink() throws IOException, FlumeSpecException,
+      InterruptedException {
+    // create temp files
+    File f1 = FileUtil.mktempdir();
+    File f2 = FileUtil.mktempdir();
+
+    try {
+      String spec = "[collectorSink(\"file://" + f1.getAbsolutePath()
+          + "\",\"foo\"), collectorSink(\"file://" + f2.getAbsolutePath()
+          + "\", \"hoo\") ]";
+      EventSink snk = FlumeBuilder.buildSink(new Context(), spec);
+      snk.open();
+      Event e = new EventImpl("joo".getBytes());
+      e.set("rolltag", "rolltag".getBytes());
+      e.set(AckChecksumInjector.ATTR_ACK_TYPE, "test".getBytes());
+      e.set(AckChecksumInjector.ATTR_ACK_TAG, "test".getBytes());
+      e.set(AckChecksumInjector.ATTR_ACK_HASH, "abadhash".getBytes());
+      snk.append(e);// this normally fails if in the same event is recycled
+      snk.close();
+    } finally {
+      FileUtil.rmr(f1);
+      FileUtil.rmr(f2);
+    }
+  }
 }
