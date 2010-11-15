@@ -1,0 +1,11 @@
+This plugin requires some GPL libraries that cannot be included in this 
+distribution:
+
+Files needed include:
+Jpcap.dll
+jpcap.jar
+libjpcap.so
+
+These files can be downloaded here:
+http://netresearch.ics.uci.edu/kfujii/Jpcap/doc/install.html
+
