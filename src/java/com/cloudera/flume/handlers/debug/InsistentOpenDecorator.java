@@ -100,7 +100,7 @@ public class InsistentOpenDecorator<S extends EventSink> extends
   }
 
   @Override
-  synchronized public void open() throws IOException {
+  synchronized public void open() throws IOException, InterruptedException {
     List<IOException> exns = new ArrayList<IOException>();
     int attemptRetries = 0;
 
@@ -116,11 +116,9 @@ public class InsistentOpenDecorator<S extends EventSink> extends
         LOG.info("Opened " + sink.getName() + " on try " + attemptRetries);
         opening = false;
         return;
+      } catch (InterruptedException ie) {
+        throw ie;
       } catch (Exception e) {
-
-        if (Thread.currentThread().isInterrupted()) {
-          throw new IOException("Open has been interrupted");
-        }
 
         if (!opening) {
           throw new IOException("Unable to open and then close requested");
@@ -138,9 +136,8 @@ public class InsistentOpenDecorator<S extends EventSink> extends
           backoff.waitUntilRetryOk();
         } catch (InterruptedException e1) {
           // got an interrupted signal, bail out!
-          Thread.currentThread().interrupt(); // re-interrupt thread.
-          exns.add(new IOException(e1));
-          throw MultipleIOException.createIOException(exns);
+          // throw MultipleIOException.createIOException(exns);
+          throw e1;
         }
 
         attemptRetries++;

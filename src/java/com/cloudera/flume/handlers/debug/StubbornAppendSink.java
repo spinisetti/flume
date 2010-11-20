@@ -72,14 +72,14 @@ public class StubbornAppendSink<S extends EventSink> extends
       super.append(e);
       appendSuccesses.incrementAndGet();
       return; // success case
+    } catch (InterruptedException ie) {
+      appendFails.incrementAndGet();
+      super.close(); // close
+      throw ie;
+
     } catch (Exception ex) {
       appendFails.incrementAndGet();
       super.close(); // close
-
-      if (Thread.currentThread().isInterrupted()) {
-        throw new IOException(
-            "throwing exception because stubborn append was interrupted");
-      }
 
       open(); // attempt to reopen
       super.append(e); // resend
