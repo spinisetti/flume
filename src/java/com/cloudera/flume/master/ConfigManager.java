@@ -444,4 +444,14 @@ public class ConfigManager implements ConfigurationManager {
     cfgStore.addChokeLimit(physNode, chokeID, limit);
   }
 
+  @Override
+  public ConfigurationManager getThisManager() {
+    return null;
+  }
+
+  @Override
+  public ConfigurationManager getParentManager() {
+    return null;
+  }
+
 }

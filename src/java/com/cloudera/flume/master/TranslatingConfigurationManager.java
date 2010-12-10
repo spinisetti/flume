@@ -508,4 +508,15 @@ abstract public class TranslatingConfigurationManager implements
   public String toString() {
     return getTranslatedConfigs().toString();
   }
+
+  @Override
+  public ConfigurationManager getThisManager() {
+    return selfMan;
+  }
+
+  @Override
+  public ConfigurationManager getParentManager() {
+    return parentMan;
+  }
+
 }

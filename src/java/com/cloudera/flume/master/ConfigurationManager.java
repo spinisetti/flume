@@ -91,7 +91,7 @@ public interface ConfigurationManager extends Reportable {
   /**
    * Associates a new logical node to the specified physical node. If no
    * physical node exists, it is created as well.
-   *
+   * 
    * @return true upon success, false otherwise.
    */
   public boolean addLogicalNode(String physNode, String logicNode);
@@ -155,4 +155,10 @@ public interface ConfigurationManager extends Reportable {
    */
   public void addChokeLimit(String physNode, String chokeID, int limit);
 
+  /**
+   * 
+   */
+  public ConfigurationManager getThisManager();
+
+  public ConfigurationManager getParentManager();
 }

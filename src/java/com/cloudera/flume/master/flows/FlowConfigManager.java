@@ -46,6 +46,8 @@ abstract public class FlowConfigManager implements ConfigurationManager {
    */
   final ConfigurationManager parent;
 
+  final ConfigurationManager self;
+
   /**
    * Map from flowid to ConfigurationManager
    */
@@ -59,6 +61,7 @@ abstract public class FlowConfigManager implements ConfigurationManager {
   public FlowConfigManager(ConfigurationManager parent) {
     Preconditions.checkArgument(parent != null);
     this.parent = parent;
+    this.self = new ConfigManager(); // memory backed
   }
 
   /**
@@ -348,13 +351,23 @@ abstract public class FlowConfigManager implements ConfigurationManager {
     return map;
   }
 
+  @Override
+  public ConfigurationManager getThisManager() {
+    return null;
+  }
+
+  @Override
+  public ConfigurationManager getParentManager() {
+    return null;
+  }
+
   /**
    * This creates a FailoverConfiguration manager with LogicalNode translations
    * that isolates each failover chain translation by flow id.
    */
   public static class FailoverFlowConfigManager extends FlowConfigManager {
     /**
-     * This is needed when constructing child ConfiguraitonManagers
+     * This is needed when constructing child ConfigurationManagers
      */
     final StatusManager statman;
 

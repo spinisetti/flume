@@ -104,4 +104,17 @@ public class ConfigManagerResource {
   public FlumeConfigData getConfig(@PathParam("node") String node) {
     return configs.getConfig(node);
   }
+
+  /**
+   * Recursively go down to next config manager
+   * 
+   * @return
+   */
+  @Path("translated")
+  public ConfigManagerResource translated() {
+    if (configs.getThisManager() == null) {
+      return null;
+    }
+    return new ConfigManagerResource(configs.getThisManager());
+  }
 }
