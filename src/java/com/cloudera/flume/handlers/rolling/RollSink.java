@@ -57,15 +57,20 @@ public class RollSink extends EventSink.Base {
   public final static String A_ROLLS = "rolls";
   public final static String A_ROLLFAILS = "rollfails";
   public final String A_ROLLSPEC = "rollspec";
-  public final String A_ROLL_TAG; // TODO (jon) parameterize this.
+  public final String rollattr;
   public final static String DEFAULT_ROLL_TAG = "rolltag";
 
   final AtomicLong rolls = new AtomicLong();
   final AtomicLong rollfails = new AtomicLong();
 
   public RollSink(Context ctx, String spec, long maxAge, long checkMs) {
+    this(ctx, spec, maxAge, checkMs, DEFAULT_ROLL_TAG);
+  }
+
+  public RollSink(Context ctx, String spec, long maxAge, long checkMs,
+      String rolltag) {
     this.ctx = ctx;
-    A_ROLL_TAG = DEFAULT_ROLL_TAG;
+    this.rollattr = rolltag;
     this.fspec = spec;
     this.trigger = new TimeTrigger(new ProcessTagger(), maxAge);
     this.checkLatencyMs = checkMs;
@@ -75,7 +80,7 @@ public class RollSink extends EventSink.Base {
 
   public RollSink(Context ctx, String spec, RollTrigger trigger, long checkMs) {
     this.ctx = ctx;
-    A_ROLL_TAG = DEFAULT_ROLL_TAG;
+    this.rollattr = DEFAULT_ROLL_TAG;
     this.fspec = spec;
     this.trigger = trigger;
     this.checkLatencyMs = checkMs;
@@ -162,7 +167,7 @@ public class RollSink extends EventSink.Base {
     }
     String tag = trigger.getTagger().getTag();
 
-    e.set(A_ROLL_TAG, tag.getBytes());
+    e.set(rollattr, tag.getBytes());
     synchronized (this) {
       curSink.append(e);
       trigger.append(e);
@@ -276,7 +281,7 @@ public class RollSink extends EventSink.Base {
       @Override
       public EventSink build(Context ctx, String... argv) {
         Preconditions.checkArgument(argv.length >= 2 && argv.length <= 3,
-            "roll(rollmillis[, checkmillis]) { sink }");
+            "roll(rollmillis[, checkmillis[, rolltag]]) { sink }");
         String spec = argv[0];
         long rollmillis = Long.parseLong(argv[1]);
 
@@ -285,12 +290,17 @@ public class RollSink extends EventSink.Base {
           checkmillis = Long.parseLong(argv[2]);
         }
 
+        String rolltag = DEFAULT_ROLL_TAG;
+        if (argv.length >= 4) {
+          rolltag = argv[3];
+        }
+
         try {
           // check sub spec to make sure it works.
           FlumeBuilder.buildSink(ctx, spec);
 
           // ok it worked, instantiate the roller
-          return new RollSink(ctx, spec, rollmillis, checkmillis);
+          return new RollSink(ctx, spec, rollmillis, checkmillis, rolltag);
         } catch (FlumeSpecException e) {
           throw new IllegalArgumentException("Failed to parse/build " + spec, e);
         }
