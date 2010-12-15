@@ -148,7 +148,7 @@ public class HiveNotifyingDfsSink extends EventSink.Base {
     // sink does exist for event, create it.
     LOG.info("Opening " + realpath);
 
-    w = new CustomDfsSink(realpath, format);
+    w = new CustomDfsSink(realpath, format,null);
     SinkCloseNotifier<EventSink, HiveDirCreatedNotification> notif =
         new SinkCloseNotifier<EventSink, HiveDirCreatedNotification>(w) {
           @Override

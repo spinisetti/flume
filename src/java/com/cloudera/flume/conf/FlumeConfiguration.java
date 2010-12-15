@@ -261,6 +261,16 @@ public class FlumeConfiguration extends Configuration {
   public static final String HIVE_USER = "flume.hive.user";
   public static final String HIVE_PW = "flume.hive.userpw";
 
+
+  //marker folder for hive queries
+  public static String HIVE_MARKER_FOLDER = "flume.hive.markerfolder";
+  public static String HIVE_DEFAULT_MARKER_FOLDER = "hdfs://admin1.research.hadoop.sjc1.mozilla.com/user/hive/warehouse/flume-temp-marker-folder";
+
+  //marker folder for ES queries
+  public static String ELASTICSEARCH_MARKER_FOLDER = "flume.elasticsearch.markerfolder";
+  public static String ELASTICSEARCH_DEFAULT_MARKER_FOLDER = "hdfs://admin1.research.hadoop.sjc1.mozilla.com/user/hive/warehouse/elasticsearch-temp-marker-folder";
+
+  
   public static final String PLUGIN_CLASSES = "flume.plugin.classes";
   public static final String OUTPUT_FORMAT_PLUGIN_CLASSES = "flume.plugin.outputformat.classes";
 
@@ -973,8 +983,43 @@ public class FlumeConfiguration extends Configuration {
   public long getHeartbeatBackoff() {
     return getLong(AGENT_HEARTBEAT_BACKOFF, 1000); // millis
   }
+  
+  
+  public String getHiveDefaultMarkerFolder() {
+    return HIVE_DEFAULT_MARKER_FOLDER;
+  }
 
-  /**
+  public static void setHiveDefaultMarkerFolder(String hiveDefaultMarkerFolder) {
+    HIVE_DEFAULT_MARKER_FOLDER = hiveDefaultMarkerFolder;
+  }
+
+  public static String getHiveMarkerFolder() {
+    return HIVE_MARKER_FOLDER;
+  }
+
+  public static void setHiveMarkerFolder(String hiveMarkerFolder) {
+    HIVE_MARKER_FOLDER = hiveMarkerFolder;
+  }
+
+
+  
+  public String getElasticSearchDefaultMarkerFolder() {
+    return ELASTICSEARCH_DEFAULT_MARKER_FOLDER;
+  }
+
+  public static void setElasticSearchDefaultMarkerFolder(String elasticsearchDefaultMarkerFolder) {
+    ELASTICSEARCH_DEFAULT_MARKER_FOLDER = elasticsearchDefaultMarkerFolder;
+  }
+
+  public String getElasticSearchMarkerFolder() {
+    return get(ELASTICSEARCH_MARKER_FOLDER, ELASTICSEARCH_DEFAULT_MARKER_FOLDER);
+  }
+
+  public static void setElasticSearchMarkerFolder(String elasticsearchMarkerFolder) {
+    ELASTICSEARCH_MARKER_FOLDER = elasticsearchMarkerFolder;
+  }
+
+/**
    * Max milliseconds to back off after a close request. Close will wait at most
    * this amount of time after it sees progress after a close request. * after a
    * close request.
