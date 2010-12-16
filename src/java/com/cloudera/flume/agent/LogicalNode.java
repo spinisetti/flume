@@ -25,9 +25,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.cloudera.flume.LogicalNodeManagerResource.ReportableAdapter;
 import com.cloudera.flume.conf.Context;
 import com.cloudera.flume.conf.FlumeBuilder;
 import com.cloudera.flume.conf.FlumeConfigData;
@@ -76,6 +80,8 @@ import com.cloudera.util.NetUtils;
  * TODO (jon) This class is not consistently synchronized currently. Another
  * look at this code may be necessary.
  */
+@XmlRootElement
+@XmlJavaTypeAdapter(ReportableAdapter.class)
 public class LogicalNode implements Reportable {
   static final Logger LOG = LoggerFactory.getLogger(LogicalNode.class);
 

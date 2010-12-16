@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.Properties;
 
 import javax.ws.rs.core.Application;
 
@@ -39,6 +39,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.cloudera.flume.LogicalNodeManagerResource;
 import com.cloudera.flume.VersionInfo;
 import com.cloudera.flume.agent.diskfailover.DiskFailoverManager;
 import com.cloudera.flume.agent.diskfailover.NaiveFileFailoverManager;
@@ -231,7 +232,8 @@ public class FlumeNode implements Reportable {
   }
 
   ServletContainer jerseyNodeServlet() {
-    Application app = new DefaultResourceConfig(NodeReportResource.class);
+    Application app = new DefaultResourceConfig(NodeReportResource.class,
+        LogicalNodeManagerResource.class);
     ServletContainer sc = new ServletContainer(app);
     return sc;
   }
