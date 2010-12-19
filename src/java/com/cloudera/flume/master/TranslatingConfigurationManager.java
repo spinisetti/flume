@@ -64,6 +64,7 @@ abstract public class TranslatingConfigurationManager implements
    * Create a new translator where the parent and the self are the same.
    */
   public TranslatingConfigurationManager(ConfigurationManager single) {
+    Preconditions.checkNotNull("Must specify non-null config manager", single);
     this.parentMan = single;
     this.selfMan = single;
   }
@@ -73,6 +74,8 @@ abstract public class TranslatingConfigurationManager implements
    */
   public TranslatingConfigurationManager(ConfigurationManager parent,
       ConfigurationManager self) {
+    Preconditions.checkNotNull("Must specify non null config manager", parent);
+    Preconditions.checkNotNull("Must specify non null config manager", self);
     this.parentMan = parent;
     this.selfMan = self;
   }
