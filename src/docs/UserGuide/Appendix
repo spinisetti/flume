@@ -199,27 +199,43 @@ data outputted by collectors is specified by the
 
 .Flume's Agent Tier Event Sinks
 
-[horizontal] 
-+agentSink[("_machine_"[, _port_])]+  :: Defaults to +agentE2ESink+
+[horizontal] +agentSink[("_machine_"[, _port_]{, batchN=1}{,
+batchLatency=0}{,compression=false})]+ :: Defaults to +agentE2ESink+
 
-+agentE2ESink[("_machine_"[, _port_])]+ :: Agent sink with write ahead log and 
-end-to-end ack.  Optional arguments specify a +_machine_+, and the TCP 
-+_port_+ pointing to a +collectorSource+.  If none is specified, the values 
-specified by the +flume.collector.event.host+ and the +flume.collector.port+ 
-properties will be used.
++agentE2ESink[("_machine_"[, _port_]{, batchN=1}{,batchLatency=0}{,compression=false})]+ :: 
+Agent sink with write ahead log and end-to-end ack.  Optional
+arguments specify a +_machine_+, and the TCP +_port_+ pointing to a
++collectorSource+.  If none is specified, the values specified by the
++flume.collector.event.host+ and the +flume.collector.port+ properties
+will be used.  Batching and compression options can also be specfied
+at the agent.  By default neither batching nor compresion is used.
+One can send groups of +batchN+ events and/or every +batchLatency+ ms,
+and enabling gzip +compression+ by enabling these optional keyword
+arguments.
 
-+agentDFOSink[("_machine_"[, _port_])]+ :: DiskFailover Agent sink that stores 
-to local disk on detected failure. This sink periodically checks with the 
-+_machine:port_+ and resends events if becomes alive again. Optional arguments 
-specify a +_machine_+, and the TCP +_port_+ pointing to a +collectorSource+.  
-If none is specified, the values specified by the +flume.collector.event.host+ 
-and the +flume.collector.port+ properties will be used.
++agentDFOSink[("_machine_"[, _port_]{, batchN=1}{,batchLatency=0}{,compression=false})]+ :: 
+DiskFailover Agent sink that stores to local disk on detected
+failure. This sink periodically checks with the +_machine:port_+ and
+resends events if becomes alive again. Optional arguments specify a
++_machine_+, and the TCP +_port_+ pointing to a +collectorSource+.  If
+none is specified, the values specified by the
++flume.collector.event.host+ and the +flume.collector.port+ properties
+will be used.  Batching and compression options can also be specfied
+at the agent.  By default neither batching nor compresion is used.
+One can send groups of +batchN+ events and/or every +batchLatency+ ms,
+and enabling gzip +compression+ by enabling these optional keyword
+arguments.
 
-+agentBESink[("_machine_"[, _port_])]+ :: BestEffort Agent sink.  This drops 
-messages on failures and continues sending.  Optional arguments specify a 
-+_collector_+, and the TCP +_PORT_+ pointing to a +collectorSource+.  If none 
-is specified, the values specified by the +flume.collector.event.host+ and the 
-+flume.collector.port+ properties will be used.
++agentBESink[("_machine_"[, _port_]{, batchN=1}{,batchLatency=0}{,compression=false})]+ :: 
+BestEffort Agent sink.  This drops messages on failures and continues
+sending.  Optional arguments specify a +_collector_+, and the TCP
++_PORT_+ pointing to a +collectorSource+.  If none is specified, the
+values specified by the +flume.collector.event.host+ and the
++flume.collector.port+ properties will be used.  Batching and
+compression options can also be specfied at the agent.  By default
+neither batching nor compresion is used.  One can send groups of
++batchN+ events and/or every +batchLatency+ ms, and enabling gzip
++compression+ by enabling these optional keyword arguments.
 
 +agentE2EChain("_m1_[:_p1_]"[, "_m2_[:_p2_]"[,...]])+ :: Agent sink
 with write-ahead log and end-to-end ack and collector failover
