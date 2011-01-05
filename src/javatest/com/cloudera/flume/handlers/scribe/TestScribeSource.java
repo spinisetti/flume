@@ -89,7 +89,7 @@ public class TestScribeSource {
 
     assertEquals("mymessage", new String(e.getBody()), "mymessage");
     assertEquals("mycategory", new String(e.getAttrs().get(
-        ScribeEventSource.SCRIBE_CATEGORY)));
+        ScribeEventSource.DEFAULT_SCRIBE_CATEGORY_ATTRIBUTE)));
   }
 
   @Test

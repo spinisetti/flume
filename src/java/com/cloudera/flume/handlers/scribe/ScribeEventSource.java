@@ -55,10 +55,11 @@ public class ScribeEventSource extends ThriftServer implements EventSource,
   static final Logger LOG = LoggerFactory.getLogger(ScribeEventSource.class);
   final BlockingQueue<Event> pendingQueue = new LinkedBlockingQueue<Event>();
 
-  final static public String SCRIBE_CATEGORY = "scribe.category";
+  final static public String DEFAULT_SCRIBE_CATEGORY_ATTRIBUTE = "scribe.category";
   final AtomicBoolean running = new AtomicBoolean(false);
   long startedTime = 0;
   int port = 0;
+  final String attrName;
 
   final static Event DONE_EVENT = new EventImpl(new byte[0]);
 
@@ -68,17 +69,18 @@ public class ScribeEventSource extends ThriftServer implements EventSource,
    * @param port
    *          port the server will listen on
    */
-  public ScribeEventSource(int port) {
+  public ScribeEventSource(int port, String attrName) {
     // turn off thrift strict read & write (respectively), otw legacy
     // thrift clients (ie scribe clients) won't be able to connect. This
     // mimics what scribed does.
     super(false, false);
-
+    this.attrName = attrName;
     this.port = port;
   }
 
   public ScribeEventSource() {
-    this(FlumeConfiguration.DEFAULT_SCRIBE_SOURCE_PORT);
+    this(FlumeConfiguration.DEFAULT_SCRIBE_SOURCE_PORT,
+        DEFAULT_SCRIBE_CATEGORY_ATTRIBUTE);
   }
 
   /**
@@ -146,7 +148,7 @@ public class ScribeEventSource extends ThriftServer implements EventSource,
     }
     for (LogEntry l : messages) {
       EventImpl e = new EventImpl(l.message.getBytes());
-      e.set(SCRIBE_CATEGORY, l.category.getBytes());
+      e.set(DEFAULT_SCRIBE_CATEGORY_ATTRIBUTE, l.category.getBytes());
       pendingQueue.add(e);
     }
     return ResultCode.OK;
@@ -228,13 +230,20 @@ public class ScribeEventSource extends ThriftServer implements EventSource,
     return new SourceBuilder() {
       @Override
       public EventSource build(Context ctx, String... argv) {
-        Preconditions.checkArgument(argv.length <= 1, "usage: scribe[(port={"
-            + FlumeConfiguration.DEFAULT_SCRIBE_SOURCE_PORT + "})]");
+        Preconditions.checkArgument(argv.length <= 1, "usage: scribe[(port="
+            + FlumeConfiguration.DEFAULT_SCRIBE_SOURCE_PORT + ", {attrName=\""
+            + DEFAULT_SCRIBE_CATEGORY_ATTRIBUTE + "\"})]");
         int port = FlumeConfiguration.get().getScribeSourcePort();
         if (argv.length >= 1) {
           port = Integer.parseInt(argv[0]);
         }
-        return new ScribeEventSource(port);
+
+        String attrName = DEFAULT_SCRIBE_CATEGORY_ATTRIBUTE;
+        if (ctx.getValue("attrName") != null) {
+          attrName = ctx.getValue("attrName");
+        }
+
+        return new ScribeEventSource(port, attrName);
       }
     };
   }
