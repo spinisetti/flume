@@ -34,7 +34,7 @@ import java.util.Map;
  * transparently.
  */
 public class Context {
-  Map<String, String> table = new HashMap<String, String>();
+  Map<String, Object> table = new HashMap<String, Object>();
   final Context parent;
 
   final public static Context EMPTY = new Context(null);
@@ -62,15 +62,47 @@ public class Context {
    * Get a value from the current node, otherwise go up to a larger scope and
    * try to get the value from there.
    */
-  public String getValue(String arg) {
-    String val = table.get(arg);
+  public Object getValue(String arg) {
+    Object val = table.get(arg);
     if (val == null && getParent() != null) {
       return getParent().getValue(arg);
     }
     return val;
   }
 
+  public Long getLong(String arg) {
+    Long val = (Long) table.get(arg);
+    if (val == null && getParent() != null) {
+      return getParent().getLong(arg);
+    }
+    return val;
+  }
+
+  public String getString(String arg) {
+    String val = (String) table.get(arg);
+    if (val == null && getParent() != null) {
+      return getParent().getString(arg);
+    }
+    return val;
+  }
+
+  public Double getDouble(String arg) {
+    Double val = (Double) table.get(arg);
+    if (val == null && getParent() != null) {
+      return getParent().getDouble(arg);
+    }
+    return val;
+  }
+
   protected void putValue(String arg, String val) {
     table.put(arg, val);
+  }
+
+  protected void putLong(String arg, Long l) {
+    table.put(arg, l);
+  }
+
+  protected void putString(String arg, String s) {
+    table.put(arg, s);
   }
 }
