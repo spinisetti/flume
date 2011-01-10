@@ -255,7 +255,8 @@ public class DiskFailoverDeco extends EventSinkDecorator<EventSink> {
         FlumeNode node = FlumeNode.getInstance();
 
         // this makes the dfo present to the when reporting on the FlumeNode
-        String dfonode = context.getValue(LogicalNodeContext.C_LOGICAL);
+        String dfonode = context.getValue(LogicalNodeContext.C_LOGICAL)
+            .toString();
         Preconditions.checkArgument(dfonode != null,
             "Context does not have a logical node name");
         DiskFailoverManager dfoman = node.getAddDFOManager(dfonode);

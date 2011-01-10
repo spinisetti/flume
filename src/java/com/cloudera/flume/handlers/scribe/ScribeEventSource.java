@@ -240,7 +240,7 @@ public class ScribeEventSource extends ThriftServer implements EventSource,
 
         String attrName = DEFAULT_SCRIBE_CATEGORY_ATTRIBUTE;
         if (ctx.getValue("attrName") != null) {
-          attrName = ctx.getValue("attrName");
+          attrName = ctx.getValue("attrName").toString();
         }
 
         return new ScribeEventSource(port, attrName);

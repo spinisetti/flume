@@ -313,7 +313,8 @@ public class NaiveFileWALDeco extends EventSinkDecorator<EventSink> {
 
         // TODO (jon) this will cause problems with multiple nodes in same JVM
         FlumeNode node = FlumeNode.getInstance();
-        String walnode = context.getValue(LogicalNodeContext.C_LOGICAL);
+        String walnode = context.getValue(LogicalNodeContext.C_LOGICAL)
+            .toString();
         if (argv.length >= 2) {
           walnode = argv[1];
         }

@@ -109,7 +109,7 @@ public class TextFileSink extends EventSink.Base {
         if (args.length >= 2) {
           val = args[1];
         } else {
-          val = context.getValue("format");
+          val = context.getValue("format").toString();
         }
 
         if (val != null) {
