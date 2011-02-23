@@ -15,8 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-
 ##
 # This script runs core flume commands.  It sets up the proper jar
 # library paths and defaults to a java class name.
@@ -94,6 +92,15 @@ fi
 if [ -z "$FLUME_HOME" ]; then
     export FLUME_HOME="$CMDPATH"
 fi
+
+# watch dog options
+WOPTS="${WOPTS:--Xmx256m -Xss512k}"
+
+# node options
+NOPTS="${NOPTS:--Xmx512m -Xss512k}"
+
+# master options
+MOPTS="${MOPTS:--Xmx1024m -Xss512k}"
 
 JOPTS="-Dflume.log.dir=${FLUME_LOG_DIR:-${FLUME_HOME}/logs} "
 JOPTS="$JOPTS -Dflume.log.file=${FLUME_LOGFILE:-flume.log} "
@@ -221,11 +228,11 @@ shift
 WATCHDOG_OPTS="-Dpid=$$ -Dpidfile="
 WATCHDOG_CLASS=com.cloudera.flume.watchdog.FlumeWatchdog
 
-MASTER_WATCHDOG="java ${JOPTS} -Dpid=$$ -Dpidfile=$MASTERPID $WATCHDOG_CLASS"
-MASTERI_WATCHDOG="java ${JOPTS} -Dpid=$$ -Dpidfile=$MASTERPID  $WATCHDOG_CLASS"
+MASTER_WATCHDOG="java ${JOPTS} ${WOPTS} -Dpid=$$ -Dpidfile=$MASTERPID $WATCHDOG_CLASS"
+MASTERI_WATCHDOG="java ${JOPTS} ${WOPTS} -Dpid=$$ -Dpidfile=$MASTERPID  $WATCHDOG_CLASS"
 
-NODE_WATCHDOG="java ${JOPTS} -Dpid=$$ -Dpidfile=${FLUME_PID_DIR}/flumenode-$$.pid $WATCHDOG_CLASS"
-NODEI_WATCHDOG="java ${JOPTS} -Dfwdstdin=true -Dpid=$$ -Dpidfile=${FLUME_PID_DIR}/flumenode-$$.pid $WATCHDOG_CLASS"
+NODE_WATCHDOG="java ${JOPTS} ${WOPTS} -Dpid=$$ -Dpidfile=${FLUME_PID_DIR}/flumenode-$$.pid $WATCHDOG_CLASS"
+NODEI_WATCHDOG="java ${JOPTS} ${WOPTS} -Dfwdstdin=true -Dpid=$$ -Dpidfile=${FLUME_PID_DIR}/flumenode-$$.pid $WATCHDOG_CLASS"
 
 if [ -n "$FLUME_VERBOSE" ]; then
     if [ -n "$FLUME_VERBOSE_JAVA" ]; then
@@ -239,10 +246,10 @@ if [ "$CMD" = "-h" ] ; then
   usage
 elif [ "$CMD" = "node" ] ; then
   # there can be multiple nodes.
-  exec $NODE_WATCHDOG java $JOPTS $UOPTS com.cloudera.flume.agent.FlumeNode "$@"
+  exec $NODE_WATCHDOG java $JOPTS $NOPTS $UOPTS com.cloudera.flume.agent.FlumeNode "$@"
 elif [ "$CMD" = "nodei" ] ; then
   # there can be multiple nodes.
-  exec $NODEI_WATCHDOG java $JOPTS $UOPTS com.cloudera.flume.agent.FlumeNode "$@"
+  exec $NODEI_WATCHDOG java $JOPTS $NOPTS $UOPTS com.cloudera.flume.agent.FlumeNode "$@"
 elif [ "$CMD" = "master" ] ; then
   # only allow one master
   if [ -f $MASTERPID ] ; then
@@ -250,13 +257,13 @@ elif [ "$CMD" = "master" ] ; then
     echo "Master already running, pid=$PID"
     exit -1
   fi
-  exec $MASTER_WATCHDOG java $JOPTS $UOPTS com.cloudera.flume.master.FlumeMaster "$@"
+  exec $MASTER_WATCHDOG java $JOPTS $MOPTS $UOPTS com.cloudera.flume.master.FlumeMaster "$@"
 elif [ "$CMD" = "node_nowatch" ] ; then
-  exec java $JOPTS $UOPTS com.cloudera.flume.agent.FlumeNode "$@"
+  exec java $JOPTS $NOPTS $UOPTS com.cloudera.flume.agent.FlumeNode "$@"
 elif [ "$CMD" = "master_nowatch" ] ; then
-  exec java $JOPTS $UOPTS com.cloudera.flume.master.FlumeMaster "$@"
+  exec java $JOPTS $MOPTS $UOPTS com.cloudera.flume.master.FlumeMaster "$@"
 elif [ "$CMD" = "watchdog" ] ; then
-  exec java $UOPTS $WATCHDOG_CLASS "$@"
+  exec java $UOPTS $WOPTS $WATCHDOG_CLASS "$@"
 elif [ "$CMD" = "version" ] ; then
   exec java $JOPTS $UOPTS com.cloudera.flume.VersionInfo
 elif [ "$CMD" = "unit" ] ; then
