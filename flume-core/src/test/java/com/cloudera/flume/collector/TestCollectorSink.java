@@ -63,7 +63,7 @@ import com.cloudera.flume.handlers.rolling.RollSink;
 import com.cloudera.flume.handlers.rolling.Tagger;
 import com.cloudera.flume.reporter.ReportEvent;
 import com.cloudera.flume.reporter.ReportManager;
-import com.cloudera.util.BenchmarkHarness;
+import com.cloudera.util.FlumeTestHarness;
 import com.cloudera.util.Clock;
 import com.cloudera.util.FileUtil;
 import com.cloudera.util.Pair;
@@ -247,7 +247,7 @@ public class TestCollectorSink {
     // entries). This stubs that out to a call doesn't cause a file not found
     // exception.
     WALManager mockWalMan = mock(WALManager.class);
-    BenchmarkHarness.setupFlumeNode(null, mockWalMan, null, null, null);
+    FlumeTestHarness.setupFlumeNode(null, mockWalMan, null, null, null);
     FlumeNode node = FlumeNode.getInstance();
     File tmpdir = FileUtil.mktempdir();
 
@@ -298,7 +298,7 @@ public class TestCollectorSink {
     snk.close();
 
     FileUtil.rmr(tmpdir);
-    BenchmarkHarness.cleanupLocalWriteDir();
+    FlumeTestHarness.cleanupLocalWriteDir();
   }
 
   /**
@@ -315,7 +315,7 @@ public class TestCollectorSink {
     // entries). This stubs that out to a call doesn't cause a file not found
     // exception.
     WALManager mockWalMan = mock(WALManager.class);
-    BenchmarkHarness.setupFlumeNode(null, mockWalMan, null, null, null);
+    FlumeTestHarness.setupFlumeNode(null, mockWalMan, null, null, null);
     FlumeNode node = FlumeNode.getInstance();
     File tmpdir = FileUtil.mktempdir();
 
@@ -362,7 +362,7 @@ public class TestCollectorSink {
     snk.close();
 
     FileUtil.rmr(tmpdir);
-    BenchmarkHarness.cleanupLocalWriteDir();
+    FlumeTestHarness.cleanupLocalWriteDir();
   }
 
   /**
@@ -376,7 +376,7 @@ public class TestCollectorSink {
     // entries). This stubs that out to a call doesn't cause a file not found
     // exception.
     WALManager mockWalMan = mock(WALManager.class);
-    BenchmarkHarness.setupFlumeNode(null, mockWalMan, null, null, null);
+    FlumeTestHarness.setupFlumeNode(null, mockWalMan, null, null, null);
     FlumeNode node = FlumeNode.getInstance();
     File tmpdir = FileUtil.mktempdir();
 
@@ -423,7 +423,7 @@ public class TestCollectorSink {
     snk.close();
 
     FileUtil.rmr(tmpdir);
-    BenchmarkHarness.cleanupLocalWriteDir();
+    FlumeTestHarness.cleanupLocalWriteDir();
   }
 
   /**
