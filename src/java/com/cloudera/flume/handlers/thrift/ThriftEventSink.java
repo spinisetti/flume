@@ -34,7 +34,6 @@ import com.cloudera.flume.conf.Context;
 import com.cloudera.flume.conf.FlumeConfiguration;
 import com.cloudera.flume.conf.SinkFactory.SinkBuilder;
 import com.cloudera.flume.core.Event;
-import com.cloudera.flume.core.EventImpl;
 import com.cloudera.flume.core.EventSink;
 import com.cloudera.flume.handlers.thrift.ThriftFlumeEventServer.Client;
 import com.cloudera.flume.reporter.ReportEvent;
@@ -115,6 +114,10 @@ public class ThriftEventSink extends EventSink.Base {
       throw new IOException("Failed to open thrift event sink at " + host + ":"
           + port + " : " + e.getMessage());
     }
+  }
+  
+  public long getSentBytes() {
+    return sentBytes.get();
   }
 
   @Override

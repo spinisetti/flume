@@ -19,10 +19,11 @@ package com.cloudera.flume.handlers.avro;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.apache.ipc.AccountingTransceiver;
 import org.apache.avro.AvroRemoteException;
 import org.apache.avro.ipc.HttpTransceiver;
+import org.apache.avro.ipc.Transceiver;
 import org.apache.avro.ipc.specific.SpecificRequestor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,7 @@ import com.cloudera.flume.core.EventSink;
 import com.cloudera.flume.reporter.ReportEvent;
 
 /**
- *This is a sink that sends events to a remote host/port using Avro.
+ * This is a sink that sends events to a remote host/port using Avro.
  */
 public class AvroEventSink extends EventSink.Base {
 
@@ -48,15 +49,17 @@ public class AvroEventSink extends EventSink.Base {
   protected FlumeEventAvroServer avroClient;
   String host;
   int port;
-  HttpTransceiver transport;
+  Transceiver http;
+  AccountingTransceiver transport;
 
   // this boolean variable is not used anywhere
   boolean nonblocking;
+
   /*
    * The following variables keeps track of the number of bytes of the
    * Event.body shipped.
    */
-  AtomicLong sentBytes = new AtomicLong();
+  // AtomicLong sentBytes = new AtomicLong();
 
   public AvroEventSink(String host, int port) {
     this.host = host;
@@ -74,7 +77,6 @@ public class AvroEventSink extends EventSink.Base {
     this.ensureInitialized();
     try {
       avroClient.append(afe);
-      sentBytes.addAndGet(e.getBody().length);
       super.append(e);
     } catch (AvroRemoteException e1) {
       throw new IOException("Append failed " + e1.getMessage(), e1);
@@ -94,7 +96,8 @@ public class AvroEventSink extends EventSink.Base {
   public void open() throws IOException {
 
     URL url = new URL("http", host, port, "/");
-    transport = new HttpTransceiver(url);
+    http = new HttpTransceiver(url);
+    transport = new AccountingTransceiver(http);
     try {
       this.avroClient = (FlumeEventAvroServer) SpecificRequestor.getClient(
           FlumeEventAvroServer.class, transport);
@@ -119,6 +122,10 @@ public class AvroEventSink extends EventSink.Base {
     }
   }
 
+  public long getSentBytes() {
+    return transport.getSentBytes();
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -127,7 +134,7 @@ public class AvroEventSink extends EventSink.Base {
     ReportEvent rpt = super.getMetrics();
     rpt.setStringMetric(A_SERVERHOST, host);
     rpt.setLongMetric(A_SERVERPORT, port);
-    rpt.setLongMetric(A_SENTBYTES, sentBytes.get());
+    rpt.setLongMetric(A_SENTBYTES, transport.getSentBytes());
     return rpt;
   }
 
