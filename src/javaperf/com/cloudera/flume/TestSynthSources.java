@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.cloudera.flume.handlers.debug;
+package com.cloudera.flume;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -24,15 +24,18 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.junit.Test;
 
 import com.cloudera.flume.core.Event;
 import com.cloudera.flume.core.EventSink;
 import com.cloudera.flume.core.EventSource;
 import com.cloudera.flume.handlers.avro.AvroJsonOutputFormat;
-import com.cloudera.util.BenchmarkHarness;
+import com.cloudera.flume.handlers.debug.AttrSynthSource;
+import com.cloudera.flume.handlers.debug.ConsoleEventSink;
+import com.cloudera.flume.handlers.debug.MemorySinkSource;
+import com.cloudera.flume.handlers.debug.SynthSource;
 
 /**
  * Test cases for synthetic sources.
@@ -76,7 +79,7 @@ public class TestSynthSources {
   public void testMultipleVaryMessageBytes() throws IOException,
       InterruptedException {
     Event e1, e2;
-    for (EventSource src : BenchmarkHarness.varyMsgBytes.values()) {
+    for (EventSource src : FlumeBenchmarkHarness.varyMsgBytes.values()) {
       src.open();
       e1 = src.next();
       src.open();
@@ -128,7 +131,7 @@ public class TestSynthSources {
   public void testAttrsMultipleVaryMessageBytes() throws IOException,
       InterruptedException {
     Event e1, e2;
-    for (EventSource src : BenchmarkHarness.varyNumAttrs.values()) {
+    for (EventSource src : FlumeBenchmarkHarness.varyNumAttrs.values()) {
       src.open();
       e1 = src.next();
       src.open();

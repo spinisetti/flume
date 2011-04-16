@@ -50,7 +50,7 @@ import com.cloudera.flume.master.FlumeMaster;
 import com.cloudera.flume.master.StatusManager.NodeState;
 import com.cloudera.flume.reporter.ReportManager;
 import com.cloudera.flume.reporter.aggregator.CounterSink;
-import com.cloudera.util.BenchmarkHarness;
+import com.cloudera.util.FlumeTestHarness;
 import com.cloudera.util.Clock;
 import com.cloudera.util.FileUtil;
 
@@ -193,7 +193,7 @@ public class TestConcurrentWALMan {
   public void doTestContextConcurrentWALMans(final int threads,
       final int events, int timeout) throws IOException, InterruptedException,
       FlumeSpecException {
-    BenchmarkHarness.setupLocalWriteDir();
+    FlumeTestHarness.setupLocalWriteDir();
     FlumeMaster master = new FlumeMaster();
     FlumeNode node = new FlumeNode(new DirectMasterRPC(master), false, false);
 
@@ -221,7 +221,7 @@ public class TestConcurrentWALMan {
       assertEquals(events + i, cnt.getCount());
     }
     assertTrue("Counts did not line up", success);
-    BenchmarkHarness.cleanupLocalWriteDir();
+    FlumeTestHarness.cleanupLocalWriteDir();
   }
 
   /**

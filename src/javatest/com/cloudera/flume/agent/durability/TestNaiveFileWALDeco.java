@@ -51,7 +51,7 @@ import com.cloudera.flume.handlers.rolling.SizeTrigger;
 import com.cloudera.flume.handlers.rolling.TimeTrigger;
 import com.cloudera.flume.reporter.ReportManager;
 import com.cloudera.flume.reporter.aggregator.CounterSink;
-import com.cloudera.util.BenchmarkHarness;
+import com.cloudera.util.FlumeTestHarness;
 import com.cloudera.util.FileUtil;
 
 /**
@@ -74,14 +74,14 @@ public class TestNaiveFileWALDeco {
   public void testRecoveredIsDeleted() throws IOException, FlumeSpecException,
       InterruptedException {
 
-    BenchmarkHarness.setupLocalWriteDir();
-    File tmp = BenchmarkHarness.tmpdir;
+    FlumeTestHarness.setupLocalWriteDir();
+    File tmp = FlumeTestHarness.tmpdir;
 
     // file with ack begin, data, and end messages
     File acked = new File("src/data/acked.00000000.20100204-015814430-0800.seq");
     // Assumes the NaiveFileWALManager!
     File writing = new File(new File(tmp,
-        BenchmarkHarness.node.getPhysicalNodeName()), "writing");
+        FlumeTestHarness.node.getPhysicalNodeName()), "writing");
     writing.mkdirs();
 
     // Must rename file because that name is in the meta data of the event
@@ -103,7 +103,7 @@ public class TestNaiveFileWALDeco {
     snk.close(); // this should block until recovery complete.
 
     // agent checks for ack registrations.
-    BenchmarkHarness.node.getAckChecker().checkAcks();
+    FlumeTestHarness.node.getAckChecker().checkAcks();
 
     CounterSink cnt = (CounterSink) ReportManager.get().getReportable("count");
     // 1032 in file + 5 from silly driver
@@ -118,7 +118,7 @@ public class TestNaiveFileWALDeco {
     assertFalse(new File(new File(tmp, "error"), acked.getName()).exists());
     assertFalse(new File(new File(tmp, "done"), acked.getName()).exists());
 
-    BenchmarkHarness.cleanupLocalWriteDir();
+    FlumeTestHarness.cleanupLocalWriteDir();
   }
 
   /**
@@ -131,14 +131,14 @@ public class TestNaiveFileWALDeco {
       FlumeSpecException, InterruptedException {
     // FlumeConfiguration.get().setLong(FlumeConfiguration.AGENT_LOG_MAX_AGE,
     // 50);
-    BenchmarkHarness.setupLocalWriteDir();
-    File tmp = BenchmarkHarness.tmpdir;
+    FlumeTestHarness.setupLocalWriteDir();
+    File tmp = FlumeTestHarness.tmpdir;
 
     // file with ack begin, data, and end messages
     File acked = new File("src/data/acked.00000000.20100204-015814430-0800.seq");
     // Assumes the NaiveFileWALManager!
     File writing = new File(new File(tmp,
-        BenchmarkHarness.node.getPhysicalNodeName()), "writing");
+        FlumeTestHarness.node.getPhysicalNodeName()), "writing");
     writing.mkdirs();
 
     // /////////////////////
@@ -157,7 +157,7 @@ public class TestNaiveFileWALDeco {
     snk.close(); // this should block until recovery complete.
 
     // agent checks for ack registrations.
-    BenchmarkHarness.node.getAckChecker().checkAcks();
+    FlumeTestHarness.node.getAckChecker().checkAcks();
 
     CounterSink cnt = (CounterSink) ReportManager.get().getReportable("count");
     // 1032 in file + 5 from silly driverx
@@ -175,10 +175,10 @@ public class TestNaiveFileWALDeco {
     // locally is reasonable for now.
 
     assertTrue(new File(new File(new File(tmp,
-        BenchmarkHarness.node.getPhysicalNodeName()), "sent"), acked.getName())
+        FlumeTestHarness.node.getPhysicalNodeName()), "sent"), acked.getName())
         .exists());
 
-    BenchmarkHarness.cleanupLocalWriteDir();
+    FlumeTestHarness.cleanupLocalWriteDir();
   }
 
   /**
@@ -193,15 +193,15 @@ public class TestNaiveFileWALDeco {
   @Test
   public void testRecoveredMovesToErr() throws IOException, FlumeSpecException,
       InterruptedException {
-    BenchmarkHarness.setupLocalWriteDir();
-    File tmp = BenchmarkHarness.tmpdir;
+    FlumeTestHarness.setupLocalWriteDir();
+    File tmp = FlumeTestHarness.tmpdir;
 
     // Assumes the NaiveFileWALManager!
     // file with ack begin, data and then truncated
     File truncated = new File(
         "src/data/truncated.00000000.20100204-015814430-0800.seq");
     File writing = new File(new File(tmp,
-        BenchmarkHarness.node.getPhysicalNodeName()), "writing");
+        FlumeTestHarness.node.getPhysicalNodeName()), "writing");
 
     writing.mkdirs();
     FileUtil.dumbfilecopy(truncated, new File(writing, truncated.getName()));
@@ -225,7 +225,7 @@ public class TestNaiveFileWALDeco {
     // BenchmarkHarness.mock.ackman.;
 
     // check to make sure wal file is gone
-    File nodedir = new File(tmp, BenchmarkHarness.node.getPhysicalNodeName());
+    File nodedir = new File(tmp, FlumeTestHarness.node.getPhysicalNodeName());
 
     assertFalse(new File(new File(nodedir, "import"), truncated.getName())
         .exists());
@@ -245,7 +245,7 @@ public class TestNaiveFileWALDeco {
     assertFalse(new File(new File(nodedir, "done"), truncated.getName())
         .exists());
 
-    BenchmarkHarness.cleanupLocalWriteDir();
+    FlumeTestHarness.cleanupLocalWriteDir();
   }
 
   /**
@@ -316,7 +316,7 @@ public class TestNaiveFileWALDeco {
   public void testExceptionThreadHandoff() throws IOException,
       InterruptedException {
     try {
-      BenchmarkHarness.setupLocalWriteDir();
+      FlumeTestHarness.setupLocalWriteDir();
       Event e = new EventImpl(new byte[0]);
       EventSink snk = new EventSink.Base() {
         @Override
@@ -337,7 +337,7 @@ public class TestNaiveFileWALDeco {
     } catch (IOException e) {
       throw e;
     } finally {
-      BenchmarkHarness.cleanupLocalWriteDir();
+      FlumeTestHarness.cleanupLocalWriteDir();
     }
   }
 
