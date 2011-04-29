@@ -17,8 +17,6 @@
  */
 package com.cloudera.flume.agent;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -33,16 +31,8 @@ import com.cloudera.flume.conf.FlumeBuilder;
 import com.cloudera.flume.conf.FlumeConfiguration;
 import com.cloudera.flume.conf.FlumeSpecException;
 import com.cloudera.flume.conf.LogicalNodeContext;
-import com.cloudera.flume.conf.SinkFactoryImpl;
-import com.cloudera.flume.conf.SinkFactory.SinkBuilder;
-import com.cloudera.flume.core.Event;
-import com.cloudera.flume.core.EventImpl;
 import com.cloudera.flume.core.EventSink;
 import com.cloudera.flume.core.EventSource;
-import com.cloudera.flume.core.EventUtil;
-import com.cloudera.flume.handlers.avro.AvroJsonOutputFormat;
-import com.cloudera.flume.handlers.debug.ConsoleEventSink;
-import com.cloudera.flume.handlers.debug.MemorySinkSource;
 import com.cloudera.util.FileUtil;
 
 /**
