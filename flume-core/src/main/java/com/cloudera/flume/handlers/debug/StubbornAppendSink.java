@@ -45,15 +45,24 @@ public class StubbornAppendSink<S extends EventSink> extends
       .getLogger(StubbornAppendSink.class);
   // attribute names
   final public static String A_SUCCESSES = "appendSuccess";
+  final public static String A_SKIPS = "appendSkips";
   final public static String A_FAILS = "appendFails";
   final public static String A_RECOVERS = "appendRecovers";
 
   AtomicLong appendSuccesses = new AtomicLong();
   AtomicLong appendFails = new AtomicLong();
+  AtomicLong appendSkips = new AtomicLong();
   AtomicLong appendRecovers = new AtomicLong();
 
+  final boolean skipBad;
+
   public StubbornAppendSink(S s) {
+    this(s, true); // skip bad data.
+  }
+
+  public StubbornAppendSink(S s, boolean skipBad) {
     super(s);
+    this.skipBad = skipBad;
   }
 
   @Override
@@ -79,8 +88,12 @@ public class StubbornAppendSink<S extends EventSink> extends
       throw ie;
 
     } catch (IOException ex) {
+      // There are two cases - all ioexceptions get retried. With exceptions due
+      // to issues in data, (ClassNotFound, NPE, IllegalStateExn etc) the user
+      // has the option to skip or abort depending on the mode selected.
 
-      LOG.info("append failed on event '{}' with IO error, retrying: {}", e, ex.getMessage());
+      LOG.info("append failed on event '{}' with IO error, retrying: {}", e,
+          ex.getMessage());
 
       appendFails.incrementAndGet();
 
@@ -91,9 +104,22 @@ public class StubbornAppendSink<S extends EventSink> extends
       appendSuccesses.incrementAndGet();
       // another exception may have been thrown at close/open/append
       appendRecovers.incrementAndGet();
-    } catch (Exception ex) {
-      
-      
+    } catch (RuntimeException ex) {
+      LOG.info("append failed on event '{}' with Runtime error: {}", e,
+          ex.getMessage());
+
+      appendFails.incrementAndGet();
+      super.close(); // close
+
+      if (skipBad) {
+        open(); // attempt to reopen
+        appendSkips.incrementAndGet();
+        LOG.warn("Skipping message: {}", e);
+      } else {
+        // in strict mode, propagate error
+        throw ex;
+      }
+
     }
   }
 
@@ -121,6 +147,7 @@ public class StubbornAppendSink<S extends EventSink> extends
     e.setLongMetric(A_SUCCESSES, appendSuccesses.get());
     e.setLongMetric(A_FAILS, appendFails.get());
     e.setLongMetric(A_RECOVERS, appendRecovers.get());
+    e.setLongMetric(A_SKIPS, appendSkips.get());
     return e;
   }
 
@@ -131,6 +158,7 @@ public class StubbornAppendSink<S extends EventSink> extends
     e.setLongMetric(A_SUCCESSES, appendSuccesses.get());
     e.setLongMetric(A_FAILS, appendFails.get());
     e.setLongMetric(A_RECOVERS, appendRecovers.get());
+    e.setLongMetric(A_SKIPS, appendSkips.get());
     return e;
   }
 }
