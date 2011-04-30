@@ -93,8 +93,10 @@ public class EventImpl extends EventBaseImpl {
   public EventImpl(byte[] s, long timestamp, Priority pri, long nanoTime,
       String host, Map<String, byte[]> fields) {
     super(fields);
-    Preconditions.checkNotNull(s);
-    Preconditions.checkArgument(s.length <= MAX_BODY_SIZE);
+    Preconditions.checkNotNull(s, "Body must not be null");
+    Preconditions.checkArgument(s.length <= MAX_BODY_SIZE,
+        "Body length longer than MAX_BODY_SIZE (" + MAX_BODY_SIZE + " bytes)");
+    Preconditions.checkNotNull(host, "Source host of even must not be null");
     // this string construction took ~5% of exec time!
     // , "byte length is " + s.length + " which is not < " + MAX_BODY_SIZE);
     Preconditions.checkNotNull(pri);
