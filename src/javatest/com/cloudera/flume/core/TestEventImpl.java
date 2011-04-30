@@ -31,4 +31,17 @@ public class TestEventImpl {
     long maxSize = FlumeConfiguration.get().getEventMaxSizeBytes();
     new EventImpl(new byte[(int) (maxSize + 1)]);
   }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testNullBody() {
+    byte[] buf = null;
+    new EventImpl(buf);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testNullHost() {
+    long maxSize = FlumeConfiguration.get().getEventMaxSizeBytes();
+    new EventImpl(new byte[(int) maxSize], 0, Priority.DEBUG, 0, null);
+  }
+
 }
