@@ -129,8 +129,13 @@ public class StubbornAppendSink<S extends EventSink> extends
       @Override
       public EventSinkDecorator<EventSink> build(Context context,
           String... argv) {
-        Preconditions.checkArgument(argv.length == 0, "usage: stubborn");
-        return new StubbornAppendSink<EventSink>(null);
+        Preconditions.checkArgument(argv.length <= 1,
+            "usage: stubbornAppend[(skipBad=true)]");
+        boolean skipBad = true;
+        if (argv.length == 1) {
+          skipBad = Boolean.parseBoolean(argv[0]);
+        }
+        return new StubbornAppendSink<EventSink>(null, skipBad);
       }
 
     };

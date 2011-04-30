@@ -127,8 +127,8 @@ public class TestStubbornAppendSink {
     // syntax (it is kinda gross but still cleaner than the version above)
     // the first two calls "succeed", the third throws io exn, and then the
     // fourth
-    doNothing().doNothing().doThrow(new IOException()).doNothing().when(
-        failAppend).append(Mockito.<Event> anyObject());
+    doNothing().doNothing().doThrow(new IOException()).doNothing()
+        .when(failAppend).append(Mockito.<Event> anyObject());
     doReturn(new ReportEvent("stub")).when(failAppend).getMetrics();
 
     StubbornAppendSink<EventSink> sink = new StubbornAppendSink<EventSink>(
@@ -141,10 +141,10 @@ public class TestStubbornAppendSink {
     }
 
     ReportEvent rpt = sink.getMetrics();
-    Assert.assertEquals(new Long(1), rpt
-        .getLongMetric(StubbornAppendSink.A_FAILS));
-    Assert.assertEquals(new Long(1), rpt
-        .getLongMetric(StubbornAppendSink.A_RECOVERS));
+    Assert.assertEquals(new Long(1),
+        rpt.getLongMetric(StubbornAppendSink.A_FAILS));
+    Assert.assertEquals(new Long(1),
+        rpt.getLongMetric(StubbornAppendSink.A_RECOVERS));
   }
 
   @Test
@@ -187,8 +187,9 @@ public class TestStubbornAppendSink {
       InterruptedException {
     EventSink mock = mock(EventSink.class);
     // two ok, and then two exception throwing cases
-    doNothing().doNothing().doThrow(new IOException()).doThrow(
-        new IOException()).when(mock).append(Mockito.<Event> anyObject());
+    doNothing().doNothing().doThrow(new IOException())
+        .doThrow(new IOException()).when(mock)
+        .append(Mockito.<Event> anyObject());
     doReturn(new ReportEvent("stub")).when(mock).getMetrics();
 
     StubbornAppendSink<EventSink> sink = new StubbornAppendSink<EventSink>(mock);
@@ -200,12 +201,14 @@ public class TestStubbornAppendSink {
       sink.append(e);
     } catch (Exception exn) {
       ReportEvent rpt = sink.getMetrics();
-      Assert.assertEquals(new Long(2), rpt
-          .getLongMetric(StubbornAppendSink.A_SUCCESSES));
-      Assert.assertEquals(new Long(1), rpt
-          .getLongMetric(StubbornAppendSink.A_FAILS));
-      Assert.assertEquals(new Long(0), rpt
-          .getLongMetric(StubbornAppendSink.A_RECOVERS));
+      Assert.assertEquals(new Long(2),
+          rpt.getLongMetric(StubbornAppendSink.A_SUCCESSES));
+      Assert.assertEquals(new Long(1),
+          rpt.getLongMetric(StubbornAppendSink.A_FAILS));
+      Assert.assertEquals(new Long(0),
+          rpt.getLongMetric(StubbornAppendSink.A_RECOVERS));
+      Assert.assertEquals(new Long(0),
+          rpt.getLongMetric(StubbornAppendSink.A_SKIPS));
       return;
     }
     Assert.fail("should have thrown exception");
@@ -226,9 +229,119 @@ public class TestStubbornAppendSink {
     assertNotNull(rpt.getLongMetric(StubbornAppendSink.A_FAILS));
     assertNotNull(rpt.getLongMetric(StubbornAppendSink.A_RECOVERS));
     assertNotNull(rpt.getLongMetric(StubbornAppendSink.A_SUCCESSES));
+    assertNotNull(rpt.getLongMetric(StubbornAppendSink.A_SKIPS));
     assertEquals("One", rpt.getStringMetric("One.name"));
   }
-  
+
+  /**
+   * Test stubborn append that gets an NPE
+   */
+  @Test
+  public void testStubbornNPEHandling() throws JSONException,
+      FlumeSpecException, IOException, InterruptedException {
+
+    EventSink mock = mock(EventSink.class);
+    // two ok, and then two exception throwing cases
+    doNothing().doThrow(new NullPointerException("forced NPE 1"))
+        .doThrow(new NullPointerException("forced NPE 2")).when(mock)
+        .append(Mockito.<Event> anyObject());
+    doReturn(new ReportEvent("stub")).when(mock).getMetrics();
+
+    StubbornAppendSink<EventSink> sink = new StubbornAppendSink<EventSink>(mock);
+    Event e = new EventImpl("foo".getBytes());
+    sink.open();
+    sink.append(e); // success
+    sink.append(e); // npe 1
+    sink.append(e); // npe 2
+    ReportEvent rpt = sink.getMetrics();
+    Assert.assertEquals(new Long(1),
+        rpt.getLongMetric(StubbornAppendSink.A_SUCCESSES));
+    Assert.assertEquals(new Long(2),
+        rpt.getLongMetric(StubbornAppendSink.A_FAILS));
+    Assert.assertEquals(new Long(0),
+        rpt.getLongMetric(StubbornAppendSink.A_RECOVERS));
+    Assert.assertEquals(new Long(2),
+        rpt.getLongMetric(StubbornAppendSink.A_SKIPS));
+    return;
+  }
+
+  /**
+   * Test stubborn append that gets an NPE
+   */
+  @Test
+  public void testStubbornIllegalStateHandling() throws JSONException,
+      FlumeSpecException, IOException, InterruptedException {
+
+    EventSink mock = mock(EventSink.class);
+    // two ok, and then two exception throwing cases
+    doNothing().doThrow(new IllegalStateException("forced Illegal State 1"))
+        .doThrow(new IllegalStateException("forced Illegal State 2"))
+        .when(mock).append(Mockito.<Event> anyObject());
+    doReturn(new ReportEvent("stub")).when(mock).getMetrics();
+
+    StubbornAppendSink<EventSink> sink = new StubbornAppendSink<EventSink>(mock);
+    Event e = new EventImpl("foo".getBytes());
+    sink.open();
+    sink.append(e); // success
+    sink.append(e); // npe 1
+    sink.append(e); // npe 2
+    ReportEvent rpt = sink.getMetrics();
+    Assert.assertEquals(new Long(1),
+        rpt.getLongMetric(StubbornAppendSink.A_SUCCESSES));
+    Assert.assertEquals(new Long(2),
+        rpt.getLongMetric(StubbornAppendSink.A_FAILS));
+    Assert.assertEquals(new Long(0),
+        rpt.getLongMetric(StubbornAppendSink.A_RECOVERS));
+    Assert.assertEquals(new Long(2),
+        rpt.getLongMetric(StubbornAppendSink.A_SKIPS));
+    return;
+  }
+
+  /**
+   * Test stubborn append that gets an NPE
+   */
+  @Test(expected = NullPointerException.class)
+  public void testStubbornNPEHandlingNoSkipMode() throws JSONException,
+      FlumeSpecException, IOException, InterruptedException {
+
+    EventSink mock = mock(EventSink.class);
+    // two ok, and then two exception throwing cases
+    doNothing().doThrow(new NullPointerException("forced NPE 1")).when(mock)
+        .append(Mockito.<Event> anyObject());
+    doReturn(new ReportEvent("stub")).when(mock).getMetrics();
+
+    StubbornAppendSink<EventSink> sink = new StubbornAppendSink<EventSink>(
+        mock, false);
+    Event e = new EventImpl("foo".getBytes());
+    sink.open();
+    sink.append(e); // success
+    sink.append(e); // npe 1
+    return;
+  }
+
+  /**
+   * Test stubborn append that gets an NPE
+   */
+  @Test(expected = IllegalStateException.class)
+  public void testStubbornIllegalStateHandlingNoSkipMode()
+      throws JSONException, FlumeSpecException, IOException,
+      InterruptedException {
+
+    EventSink mock = mock(EventSink.class);
+    // first ok, second throws illegal state exception
+    doNothing().doThrow(new IllegalStateException("forced Illegal State 1"))
+        .when(mock).append(Mockito.<Event> anyObject());
+    doReturn(new ReportEvent("stub")).when(mock).getMetrics();
+
+    StubbornAppendSink<EventSink> sink = new StubbornAppendSink<EventSink>(
+        mock, false);
+    Event e = new EventImpl("foo".getBytes());
+    sink.open();
+    sink.append(e); // success
+    sink.append(e); // npe 1
+    return;
+  }
+
   /**
    * Enforce the semantics of interruption exception handling.
    * 
