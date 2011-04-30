@@ -30,7 +30,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 
 /**
- * This is the abstract class for events in flume.
+ * This is the abstract class for events in flume. None of the calls that return
+ * instances shall return null.
  */
 abstract public class Event {
   static final Logger LOG = LoggerFactory.getLogger(Event.class);
@@ -49,7 +50,7 @@ abstract public class Event {
   abstract public byte[] getBody();
 
   /**
-   * the priority - user specified priority
+   * the priority - user specified priority. This should never return null.
    */
   abstract public Priority getPriority();
 
@@ -64,7 +65,8 @@ abstract public class Event {
   abstract public long getNanos();
 
   /**
-   * Host name of the machine that generated this event.
+   * Host name of the machine that generated this event. This should never
+   * return null.
    * 
    * TODO (jon) consider wrapping this. Chose string because it doesn't assume
    * ipv4 or ipv6, etc. May cause canonalicalization problems.
@@ -73,7 +75,8 @@ abstract public class Event {
 
   /**
    * This gets a particular attribute added to an event. This an extensible
-   * interface for "other" attributes.
+   * interface for "other" attributes. This will return null if the attribute is
+   * not present.
    */
   abstract public byte[] get(String attr);
 
@@ -91,7 +94,7 @@ abstract public class Event {
   /**
    * Ideally this would be package private, but instead this method should
    * return a ReadOnly Map. This can be done by wrapping a map m with
-   * Collections.unmodifiableMap(m).
+   * Collections.unmodifiableMap(m).  This should never return null.
    */
   abstract public Map<String, byte[]> getAttrs();
 

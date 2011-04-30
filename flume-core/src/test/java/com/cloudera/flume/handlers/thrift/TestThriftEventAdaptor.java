@@ -72,4 +72,16 @@ public class TestThriftEventAdaptor {
     Assert.assertEquals(0, new ThriftEventAdaptor(tEvt).getBody().length);
   }
 
+  // Thrift servers are not in our control and may generate dirty or invalid
+  // data.
+
+  @Test
+  public void testEvilThriftEvent() {
+    ThriftFlumeEvent tEvt = new ThriftFlumeEvent(0, null, null, 0, null, null);
+    Event e = new ThriftEventAdaptor(tEvt);
+    Assert.assertNotNull(e);
+    Assert.assertNotNull(e.getHost());
+    Assert.assertNotNull(e.getAttrs());
+    Assert.assertNotNull(e.getPriority());
+  }
 }

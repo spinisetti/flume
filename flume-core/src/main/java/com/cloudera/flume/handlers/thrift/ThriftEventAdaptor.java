@@ -33,6 +33,8 @@ import com.google.common.base.Preconditions;
 
 /**
  * This wraps a Thrift generated ThriftFlumeEvent with a Flume Event interface.
+ * It enforces the non-null constraints on FlumeEvents. (It does not enforce max
+ * body length -- this may be enforced elsewhere)
  * 
  * This should only be used by the ThriftEventSink, ThriftEventSource, and
  * ThriftFlumeEventServerImpl. Its constructor, and static conversion function
@@ -61,7 +63,12 @@ class ThriftEventAdaptor extends Event {
 
   @Override
   public Priority getPriority() {
-    return convert(evt.getPriority());
+    Priority p = convert(evt.getPriority());
+    if (p == null) {
+      return Priority.ERROR; // Flume Event Priority is vestigial, so
+                             // for now we set this as a special case.
+    }
+    return p;
   }
 
   @Override
@@ -70,7 +77,8 @@ class ThriftEventAdaptor extends Event {
   }
 
   public static Priority convert(com.cloudera.flume.handlers.thrift.Priority p) {
-    Preconditions.checkNotNull(p, "Priority argument must be valid.");
+    if (p == null)
+      return null;
 
     switch (p) {
     case FATAL:
@@ -86,7 +94,7 @@ class ThriftEventAdaptor extends Event {
     case TRACE:
       return Priority.TRACE;
     default:
-      throw new IllegalStateException("Unknown value " + p);
+      return null;
     }
   }
 
@@ -125,7 +133,11 @@ class ThriftEventAdaptor extends Event {
 
   @Override
   public String getHost() {
-    return evt.getHost();
+    String host = evt.getHost();
+    if (host == null) {
+      return "";
+    }
+    return host;
   }
 
   /**
