@@ -261,4 +261,80 @@ public class TestRollSink {
     snk.close();
   }
 
+  @Test
+  public void testNPEInRoll() throws IOException, InterruptedException {
+    SinkFactoryImpl sf = new SinkFactoryImpl();
+    sf.setSink("appendNPE", new SinkBuilder() {
+      @Override
+      public EventSink build(Context context, String... argv) {
+        return new EventSink.Base() {
+          public String getName() {
+            return "appendNPE";
+          }
+
+          public void append(Event e) {
+            throw new NullPointerException("force NPE");
+          }
+        };
+      }
+    });
+    FlumeBuilder.setSinkFactory(sf);
+    RollSink snk = new RollSink(new ReportTestingContext(), "appendNPE",
+        new SizeTrigger(10, new ProcessTagger()), 100);
+    snk.open();
+    snk.append(new EventImpl("dummy".getBytes()));
+    snk.close();
+  }
+
+  @Test
+  public void testInterruptInRoll() throws IOException, InterruptedException {
+    SinkFactoryImpl sf = new SinkFactoryImpl();
+    sf.setSink("appendInterrupt", new SinkBuilder() {
+      @Override
+      public EventSink build(Context context, String... argv) {
+        return new EventSink.Base() {
+          public String getName() {
+            return "appendInterrupt";
+          }
+
+          public void append(Event e) throws InterruptedException {
+            throw new InterruptedException("force Interrupted Exception");
+          }
+        };
+      }
+    });
+    FlumeBuilder.setSinkFactory(sf);
+
+    RollSink snk = new RollSink(new ReportTestingContext(), "counter(\"foo\")",
+        new SizeTrigger(10, new ProcessTagger()), 100);
+    snk.open();
+    snk.append(new EventImpl("dummy".getBytes()));
+    snk.close();
+  }
+
+  @Test
+  public void testIllegalStateInRoll() throws IOException, InterruptedException {
+    SinkFactoryImpl sf = new SinkFactoryImpl();
+    sf.setSink("appendIllegalException", new SinkBuilder() {
+      @Override
+      public EventSink build(Context context, String... argv) {
+        return new EventSink.Base() {
+          public String getName() {
+            return "appendIllegalException";
+          }
+
+          public void append(Event e) throws InterruptedException {
+            throw new IllegalStateException("force Runtime Exception");
+          }
+        };
+      }
+    });
+    FlumeBuilder.setSinkFactory(sf);
+
+    RollSink snk = new RollSink(new ReportTestingContext(),
+        "appendIllegalException", new SizeTrigger(10, new ProcessTagger()), 100);
+    snk.open();
+    snk.append(new EventImpl("dummy".getBytes()));
+    snk.close();
+  }
 }
