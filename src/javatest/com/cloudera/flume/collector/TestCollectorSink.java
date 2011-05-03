@@ -156,9 +156,10 @@ public class TestCollectorSink {
   @Test
   public void testCorrectFilename() throws IOException, InterruptedException,
       FlumeSpecException {
-    CollectorSink sink = new CollectorSink(new Context(),
-        "file:///tmp/flume-test-correct-filename", "actual-file-", 10000,
-        new Tagger() {
+    File tmpdir = FileUtil.mktempdir();
+    CollectorSink sink = new CollectorSink(new Context(), "file://"
+        + tmpdir.getAbsolutePath() + "/flume-test-correct-filename",
+        "actual-file-", 10000, new Tagger() {
           public String getTag() {
             return "tag";
           }
@@ -179,7 +180,8 @@ public class TestCollectorSink {
     sink.open();
     sink.append(new EventImpl(new byte[0]));
     sink.close();
-    File f = new File("/tmp/flume-test-correct-filename/actual-file-tag");
+    File f = new File(tmpdir.getAbsoluteFile()
+        + "/flume-test-correct-filename/actual-file-tag");
     f.deleteOnExit();
     assertTrue("Expected filename does not exists " + f.getAbsolutePath(),
         f.exists());
