@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -41,6 +42,7 @@ import com.cloudera.flume.conf.SinkFactory.SinkBuilder;
 import com.cloudera.flume.core.Event;
 import com.cloudera.flume.core.EventImpl;
 import com.cloudera.flume.core.EventSink;
+import com.cloudera.util.FileUtil;
 import com.cloudera.util.OSUtils;
 
 /**
@@ -52,8 +54,8 @@ public class TestDFSWrite {
   @Test
   public void testDirectWrite() throws IOException {
     FlumeConfiguration conf = FlumeConfiguration.get();
-
-    Path path = new Path("file:///tmp/testfile");
+    File tmpdir = FileUtil.mktempdir();
+    Path path = new Path("file://" + tmpdir.getAbsolutePath() +"/testfile");
     FileSystem hdfs = path.getFileSystem(conf);
     hdfs.deleteOnExit(path);
 
@@ -78,8 +80,8 @@ public class TestDFSWrite {
   @Test
   public void testHDFSSequenceFileWrite() throws IOException {
     FlumeConfiguration conf = FlumeConfiguration.get();
-
-    Path path = new Path("file:///tmp/testfile");
+    File tmpdir = FileUtil.mktempdir();
+    Path path = new Path("file://" + tmpdir.getAbsolutePath() +"/testfile");
     FileSystem hdfs = path.getFileSystem(conf);
     hdfs.deleteOnExit(path);
 
@@ -112,7 +114,8 @@ public class TestDFSWrite {
   @Test
   public void testHDFSEventSink() throws IOException, InterruptedException {
     FlumeConfiguration conf = FlumeConfiguration.get();
-    String str = "file:///tmp/testfile";
+    File tmpdir = FileUtil.mktempdir();
+    String str = "file://" + tmpdir.getAbsolutePath() +"/testfile";
     Path path = new Path(str);
     DFSEventSink sink = new DFSEventSink(str);
 
@@ -148,9 +151,11 @@ public class TestDFSWrite {
   @Test
   public void testTaggedWrites() throws IOException, InterruptedException {
     FlumeConfiguration conf = FlumeConfiguration.get();
-    String template = "file:///tmp/testfile-%{mytag}";
-    String real1 = "file:///tmp/testfile-one";
-    String real2 = "file:///tmp/testfile-two";
+
+    File tmpdir = FileUtil.mktempdir();
+    String template = "file://" + tmpdir.getAbsolutePath() +"/testfile-%{mytag}";
+    String real1 = "file://" + tmpdir.getAbsolutePath() +"/testfile-one";
+    String real2 = "file://" + tmpdir.getAbsolutePath() +"/testfile-two";
 
     DFSEventSink sink = new DFSEventSink(template);
 
@@ -205,7 +210,8 @@ public class TestDFSWrite {
 
     // There a was a failure case using :
     FlumeConfiguration conf = FlumeConfiguration.get();
-    Path path = new Path("file:///tmp/testfile");
+    File tmpdir = FileUtil.mktempdir();
+    Path path = new Path("file://" + tmpdir.getAbsolutePath() +"/testfile");
     FileSystem hdfs = path.getFileSystem(conf);
 
     // writing
