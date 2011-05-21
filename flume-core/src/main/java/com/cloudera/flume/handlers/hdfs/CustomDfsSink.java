@@ -24,12 +24,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.hadoop.conf.Configurable;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.Compressor;
-import org.apache.hadoop.io.compress.GzipCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +55,7 @@ public class CustomDfsSink extends EventSink.Base {
 
   boolean compressOutput;
   OutputFormat format;
+  FSDataOutputStream fsout;
   OutputStream writer;
   AtomicLong count = new AtomicLong();
   String path;
@@ -130,7 +131,8 @@ public class CustomDfsSink extends EventSink.Base {
       }
       dstPath = new Path(path);
       hdfs = dstPath.getFileSystem(conf);
-      writer = hdfs.create(dstPath);
+      fsout = hdfs.create(dstPath);
+      writer = fsout;
       LOG.info("Creating HDFS file: " + dstPath.toString());
       return;
     }
@@ -142,7 +144,9 @@ public class CustomDfsSink extends EventSink.Base {
     Compressor cmp = codec.createCompressor();
     dstPath = new Path(path + codec.getDefaultExtension());
     hdfs = dstPath.getFileSystem(conf);
-    writer = hdfs.create(dstPath);
+    
+    fsout = hdfs.create(dstPath);
+    writer = fsout;
     try {
       writer = codec.createOutputStream(writer, cmp);
     } catch (NullPointerException npe) {
@@ -200,5 +204,16 @@ public class CustomDfsSink extends EventSink.Base {
     rpt.setStringMetric(A_OUTPUTFORMAT, format.getBuilder().getName());
     rpt.setLongMetric(ReportEvent.A_COUNT, count.get());
     return rpt;
+  }
+  
+  /**
+   * Exposes Hadoop FSDataOutputStream.  Necessarily exposed to support sync.
+   */
+  public FSDataOutputStream getFSDataOutputStream() {
+    return fsout;
+  }
+  
+  public void flush() throws IOException {
+    fsout.sync(); // TODO reflection to determine to use sync, hflush, or hsync.
   }
 }

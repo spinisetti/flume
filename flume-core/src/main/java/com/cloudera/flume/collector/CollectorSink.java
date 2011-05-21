@@ -46,6 +46,7 @@ import com.cloudera.flume.handlers.debug.InsistentOpenDecorator;
 import com.cloudera.flume.handlers.debug.StubbornAppendSink;
 import com.cloudera.flume.handlers.endtoend.AckChecksumChecker;
 import com.cloudera.flume.handlers.endtoend.AckListener;
+import com.cloudera.flume.handlers.rolling.FlusherSink;
 import com.cloudera.flume.handlers.rolling.ProcessTagger;
 import com.cloudera.flume.handlers.rolling.RollSink;
 import com.cloudera.flume.handlers.rolling.Tagger;
@@ -80,30 +81,52 @@ public class CollectorSink extends EventSink.Base {
 
   CollectorSink(Context ctx, String snkSpec, long millis, AckListener ackDest)
       throws FlumeSpecException {
-    this(ctx, snkSpec, millis, new ProcessTagger(), 250, ackDest);
+    this(ctx, snkSpec, millis, new ProcessTagger(), 250, ackDest, false);
   }
 
   CollectorSink(Context ctx, final String snkSpec, final long millis,
-      final Tagger tagger, long checkmillis, AckListener ackDest) {
+      final Tagger tagger, final long checkmillis, AckListener ackDest,
+      boolean flushMode) {
     this.ackDest = ackDest;
     this.snkSpec = snkSpec;
-    roller = new RollSink(ctx, snkSpec, new TimeTrigger(tagger, millis),
-        checkmillis) {
-      // this is wraps the normal roll sink with an extra roll detection
-      // decorator that triggers ack delivery on close.
-      @Override
-      public EventSink newSink(Context ctx) throws IOException {
-        String tag = tagger.newTag();
-        EventSink drain;
-        try {
-          drain = new CompositeSink(ctx, snkSpec);
-        } catch (FlumeSpecException e) {
-          throw new IOException("Unable to instantiate '" + snkSpec + "'", e);
-        }
-        return new RollDetectDeco(drain, tag);
-      }
-    };
 
+    if (flushMode) {
+      roller = new RollSink(ctx, snkSpec, new TimeTrigger(tagger, millis),
+          checkmillis) {
+        // this is wraps the normal roll sink with an extra roll detection
+        // decorator that triggers ack delivery on close.
+        @Override
+        public EventSink newSink(Context ctx) throws IOException {
+          String tag = tagger.newTag();
+          EventSink drain;
+          try {
+            drain = new CompositeSink(ctx, snkSpec);
+          } catch (FlumeSpecException e) {
+            throw new IOException("Unable to instantiate '" + snkSpec + "'", e);
+          }
+          return new RollDetectDeco(drain, tag);
+        }
+      };
+    } else {
+      roller = new RollSink(ctx, snkSpec, new TimeTrigger(tagger, millis),
+          checkmillis) {
+        // this is wraps the normal roll sink with an extra roll detection
+        // decorator that triggers ack delivery on close.
+        @Override
+        public EventSink newSink(Context ctx) throws IOException {
+          String tag = tagger.newTag();
+          EventSink drain;
+          try {
+            drain = new CompositeSink(ctx, snkSpec);
+          } catch (FlumeSpecException e) {
+            throw new IOException("Unable to instantiate '" + snkSpec + "'", e);
+          }
+          drain = new FlushDetectDeco(drain, tag);
+          return new FlusherSink(ctx, snkSpec, millis, checkmillis);
+        }
+      };
+    }
+    
     long initMs = FlumeConfiguration.get().getInsistentOpenInitBackoff();
     long cumulativeMaxMs = FlumeConfiguration.get()
         .getFailoverMaxCumulativeBackoff();
@@ -137,14 +160,50 @@ public class CollectorSink extends EventSink.Base {
       throws FlumeSpecException {
     this(ctx, "escapedCustomDfs(\"" + StringEscapeUtils.escapeJava(path)
         + "\",\"" + StringEscapeUtils.escapeJava(filename) + "%{rolltag}"
-        + "\" )", millis, tagger, checkmillis, ackDest);
+        + "\" )", millis, tagger, checkmillis, ackDest, false);
   }
 
   String curRollTag;
 
+  class FlushDetectDeco extends EventSinkDecorator<EventSink> {
+    String tag;
+
+    public FlushDetectDeco(EventSink s, String tag) {
+      super(s);
+      this.tag = tag;
+    }
+
+    @Override
+    public void open() throws IOException, InterruptedException {
+      // set the collector's current tag to curRollTAg.
+      LOG.debug("opening flush detect deco {}", tag);
+      curRollTag = tag;
+      super.open();
+      LOG.debug("opened  flush detect deco {}", tag);
+    }
+
+    @Override
+    public void flush() throws IOException, InterruptedException {
+      LOG.debug("closing roll detect deco {}", tag);
+      super.flush();
+      flushRollAcks(tag);
+      LOG.debug("closed  roll detect deco {}", tag);
+
+    }
+
+    @Override
+    public void close() throws IOException, InterruptedException {
+      LOG.debug("closing roll detect deco {}", tag);
+      super.close();
+      flushRollAcks(tag);
+      LOG.debug("closed  roll detect deco {}", tag);
+    }
+
+  }
+
   /**
    * This is a helper class that wraps the body of the collector sink, so that
-   * and gives notifications when a roll hash happened. Because only close has
+   * and gives notifications when a roll has happened. Because only close has
    * sane flushing semantics in hdfs <= v0.20.x we need to collect acks, data is
    * safe only after a close on the hdfs file happens.
    */
@@ -164,28 +223,32 @@ public class CollectorSink extends EventSink.Base {
       LOG.debug("opened  roll detect deco {}", tag);
     }
 
+    public void flush() throws IOException {
+    }
+
     @Override
     public void close() throws IOException, InterruptedException {
       LOG.debug("closing roll detect deco {}", tag);
       super.close();
-      flushRollAcks();
+      flushRollAcks(tag);
       LOG.debug("closed  roll detect deco {}", tag);
     }
 
-    void flushRollAcks() throws IOException {
-      AckListener master = ackDest;
-      Collection<String> acktags;
-      synchronized (rollAckSet) {
-        acktags = new ArrayList<String>(rollAckSet);
-        rollAckSet.clear();
-        LOG.debug("Roll closed, pushing acks for " + tag + " :: " + acktags);
-      }
-
-      for (String at : acktags) {
-        master.end(at);
-      }
-    }
   };
+
+  void flushRollAcks(String tag) throws IOException {
+    AckListener master = ackDest;
+    Collection<String> acktags;
+    synchronized (rollAckSet) {
+      acktags = new ArrayList<String>(rollAckSet);
+      rollAckSet.clear();
+      LOG.debug("Roll closed, pushing acks for " + tag + " :: " + acktags);
+    }
+
+    for (String at : acktags) {
+      master.end(at);
+    }
+  }
 
   /**
    * This accumulates ack tags in rollAckMap so that they can be pushed to the

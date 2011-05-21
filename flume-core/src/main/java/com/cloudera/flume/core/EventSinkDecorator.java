@@ -75,7 +75,11 @@ public class EventSinkDecorator<S extends EventSink> extends EventSink.Base {
     sink.open();
     isOpen.set(true);
   }
-
+  
+  public void flush() throws IOException, InterruptedException {
+    sink.flush();
+  }
+  
   @Override
   public ReportEvent getMetrics() {
     ReportEvent rpt = new ReportEvent(getName());
@@ -88,7 +92,7 @@ public class EventSinkDecorator<S extends EventSink> extends EventSink.Base {
     map.put(sink.getName(), sink);
     return map;
   }
-
+  
   @Deprecated
   @Override
   public void getReports(String namePrefix, Map<String, ReportEvent> reports) {

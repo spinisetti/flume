@@ -159,20 +159,20 @@ public class TestRollSink {
 
     snk.open();
     Clock.sleep(100); // sleep until about 100 ms; no flush yet.
-    assertEquals(Long.valueOf(0), snk.getMetrics().getLongMetric(
-        RollSink.A_ROLLS));
+    assertEquals(Long.valueOf(0),
+        snk.getMetrics().getLongMetric(RollSink.A_ROLLS));
 
     Clock.sleep(200); // auto flush
-    assertEquals(Long.valueOf(1), snk.getMetrics().getLongMetric(
-        RollSink.A_ROLLS));
+    assertEquals(Long.valueOf(1),
+        snk.getMetrics().getLongMetric(RollSink.A_ROLLS));
 
     Clock.sleep(200); // auto flush.
-    assertEquals(Long.valueOf(2), snk.getMetrics().getLongMetric(
-        RollSink.A_ROLLS));
+    assertEquals(Long.valueOf(2),
+        snk.getMetrics().getLongMetric(RollSink.A_ROLLS));
 
     Clock.sleep(200); // auto flush.
-    assertEquals(Long.valueOf(3), snk.getMetrics().getLongMetric(
-        RollSink.A_ROLLS));
+    assertEquals(Long.valueOf(3),
+        snk.getMetrics().getLongMetric(RollSink.A_ROLLS));
     snk.close();
   }
 
@@ -188,42 +188,42 @@ public class TestRollSink {
 
     snk.open();
 
-    assertEquals(Long.valueOf(0), snk.getMetrics().getLongMetric(
-        RollSink.A_ROLLS));
+    assertEquals(Long.valueOf(0),
+        snk.getMetrics().getLongMetric(RollSink.A_ROLLS));
 
     // a 10 byte body
     Event e = new EventImpl("0123456789".getBytes());
     snk.append(e);
     Clock.sleep(200); // at least one check period
-    assertEquals(Long.valueOf(1), snk.getMetrics().getLongMetric(
-        RollSink.A_ROLLS));
+    assertEquals(Long.valueOf(1),
+        snk.getMetrics().getLongMetric(RollSink.A_ROLLS));
 
     // 5 bytes (no trigger)
     e = new EventImpl("01234".getBytes());
     snk.append(e);
     Clock.sleep(200); // at least one check period
-    assertEquals(Long.valueOf(1), snk.getMetrics().getLongMetric(
-        RollSink.A_ROLLS));
+    assertEquals(Long.valueOf(1),
+        snk.getMetrics().getLongMetric(RollSink.A_ROLLS));
     // 5 more bytes (ok trigger)
     e = new EventImpl("01234".getBytes());
     snk.append(e);
     Clock.sleep(200); // at least one check period
-    assertEquals(Long.valueOf(2), snk.getMetrics().getLongMetric(
-        RollSink.A_ROLLS));
+    assertEquals(Long.valueOf(2),
+        snk.getMetrics().getLongMetric(RollSink.A_ROLLS));
 
     // 27 bytes but only on trigger
     e = new EventImpl("012345678901234567890123456".getBytes());
     snk.append(e);
     Clock.sleep(200); // at least one check period
-    assertEquals(Long.valueOf(3), snk.getMetrics().getLongMetric(
-        RollSink.A_ROLLS));
+    assertEquals(Long.valueOf(3),
+        snk.getMetrics().getLongMetric(RollSink.A_ROLLS));
 
     // 5 bytes (no trigger)
     e = new EventImpl("01234".getBytes());
     snk.append(e);
     Clock.sleep(200); // at least one check period
-    assertEquals(Long.valueOf(3), snk.getMetrics().getLongMetric(
-        RollSink.A_ROLLS));
+    assertEquals(Long.valueOf(3),
+        snk.getMetrics().getLongMetric(RollSink.A_ROLLS));
 
     snk.close();
   }
@@ -259,6 +259,17 @@ public class TestRollSink {
     assertEquals("One", all.getStringMetric("One.name"));
 
     snk.close();
+  }
+
+  /**
+   * Make sure the roller with a failing "internal" open or close doens't fail.
+   * This could like failure to close a file or failure to reconnect because
+   * hdfs goes down.
+   */
+  @Test
+  public void testInternalFail() {
+
+    RollSink snk = new RollSink(ctx, spec, maxAge, checkMs);
   }
 
 }

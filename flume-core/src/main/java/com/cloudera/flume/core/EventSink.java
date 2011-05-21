@@ -63,6 +63,8 @@ public interface EventSink extends Reportable {
    */
   public void close() throws IOException, InterruptedException;
 
+  public void flush() throws IOException, InterruptedException;
+  
   /**
    * Generate a simplified report. This only gathers a limited number of metrics
    * about the particular sink, and does not hierarchically gather information
@@ -115,6 +117,9 @@ public interface EventSink extends Reportable {
      */
     @Override
     public void close() throws IOException, InterruptedException {
+    }
+    
+    public void flush() throws IOException, InterruptedException {    
     }
 
     /**
