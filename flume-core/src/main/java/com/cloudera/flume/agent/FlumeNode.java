@@ -19,6 +19,8 @@
 package com.cloudera.flume.agent;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -436,8 +438,9 @@ public class FlumeNode implements Reportable {
 
     CommandLine cmd = null;
     Options options = new Options();
+    options.addOption("f", true, "Load initial config from specified file arg");
     options.addOption("c", true, "Load initial config from cmdline arg");
-    options.addOption("n", true, "Set node name");
+    options.addOption("n", true, "Set node name (physical[,logical,logical,....]");
     options.addOption("s", false,
         "Do not start local flume status server on node");
     options.addOption("1", false,
@@ -470,10 +473,26 @@ public class FlumeNode implements Reportable {
     nodeConfigChecksOk();
 
     String nodename = NetUtils.localhost(); // default to local host name.
+
+    String[] logicalnames = { nodename };
     if (cmd != null && cmd.hasOption("n")) {
       // select a different name, allow for multiple processes configured
       // differently on same node.
-      nodename = cmd.getOptionValue("n");
+
+      if (cmd.getOptionValue("n").contains(",")) {
+        String[] nodes = cmd.getOptionValue("n").split(",");
+        nodename = nodes[0];
+        logicalnames = new String[nodes.length - 1];
+        for (int i = 1; i < nodes.length; i++) {
+          logicalnames[i - 1] = nodes[i];
+        }
+        if (!cmd.hasOption("f")) {
+          LOG.warn("Setting logical names via -n has no effect if configuration is not loaded via -f");
+        }
+      } else {
+        nodename = cmd.getOptionValue("n");
+        logicalnames[0] = nodename;
+      }
     }
 
     boolean startHttp = false;
@@ -516,6 +535,44 @@ public class FlumeNode implements Reportable {
         }
       }
 
+    } else if (cmd != null && cmd.hasOption("f")) {
+      String filename = cmd.getOptionValue("f");
+
+      StringBuilder sb = new StringBuilder();
+      
+      LOG.info("Loading spec from file: '" + filename + "'");
+
+      try {
+        BufferedReader br = new BufferedReader(new FileReader(filename));
+        do {
+          String line = br.readLine();
+          if (null == line) {
+            break;
+          }
+          sb.append(line);
+          sb.append("\n");
+        } while (true);
+        br.close();
+
+        for (String logicalnode: logicalnames) {
+          Context ctx = new LogicalNodeContext(nodename, logicalnode);
+          Map<String, Pair<String, String>> cfgs = FlumeBuilder.parseConf(ctx, sb.toString());
+          Pair<String, String> node = cfgs.get(logicalnode);
+
+          if (null == node) {
+            LOG.warn("No config found for logical node " + logicalnode);
+          } else {
+            flume.nodesMan.spawn(logicalnode, node.getLeft(), node.getRight());
+          }
+        }
+      } catch (Exception e) {
+        LOG.warn("Caught exception loading node:" + e.getMessage());
+        LOG.debug("Exception: ", e);
+        if (oneshot) {
+          System.exit(0); // exit cleanly
+        }
+      }
+    
     } else {
       // default to null configurations.
       try {
