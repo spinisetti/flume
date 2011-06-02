@@ -292,19 +292,19 @@ public class NaiveFileWALDeco extends EventSinkDecorator<EventSink> {
       public EventSinkDecorator<EventSink> build(Context context,
           String... argv) {
         Preconditions.checkArgument(argv.length <= 3,
-            "usage: ackedWriteAhead[(maxMillis,walnode,checkMs)]");
+            "usage: ackedWriteAhead[(dir_suffix[,maxMillis[,checkMs]])]");
         FlumeConfiguration conf = FlumeConfiguration.get();
         long delayMillis = conf.getAgentLogMaxAge();
 
-        if (argv.length >= 1) {
-          delayMillis = Long.parseLong(argv[0]);
+        if (argv.length >= 2) {
+          delayMillis = Long.parseLong(argv[1]);
         }
 
         // TODO (jon) this will cause problems with multiple nodes in same JVM
         FlumeNode node = FlumeNode.getInstance();
         String walnode = context.getValue(LogicalNodeContext.C_LOGICAL);
-        if (argv.length >= 2) {
-          walnode = argv[1];
+        if (argv.length >= 1) {
+          walnode = walnode + argv[0];
         }
         Preconditions.checkArgument(walnode != null,
             "Context does not have a logical node name");

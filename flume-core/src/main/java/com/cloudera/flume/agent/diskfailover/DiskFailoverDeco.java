@@ -215,17 +215,17 @@ public class DiskFailoverDeco extends EventSinkDecorator<EventSink> {
       public EventSinkDecorator<EventSink> build(Context context,
           String... argv) {
         Preconditions.checkArgument(argv.length <= 1,
-            "usage: diskFailover[(maxMillis[, checkmillis])]");
+            "usage: diskFailover[(dir_suffix,[maxMillis[, checkmillis]])]");
         FlumeConfiguration conf = FlumeConfiguration.get();
         long delayMillis = conf.getAgentLogMaxAge();
 
-        if (argv.length >= 1) {
-          delayMillis = Long.parseLong(argv[0]);
+        if (argv.length >= 2) {
+          delayMillis = Long.parseLong(argv[1]);
         }
 
         long checkmillis = 250;
-        if (argv.length >= 2) {
-          checkmillis = Long.parseLong(argv[1]);
+        if (argv.length >= 3) {
+          checkmillis = Long.parseLong(argv[2]);
         }
 
         // TODO (jon) this will cause problems with multiple nodes in
@@ -234,7 +234,8 @@ public class DiskFailoverDeco extends EventSinkDecorator<EventSink> {
 
         // this makes the dfo present to the when reporting on the
         // FlumeNode
-        String dfonode = context.getValue(LogicalNodeContext.C_LOGICAL);
+        String dfonode = context.getValue(LogicalNodeContext.C_LOGICAL)
+            + (argv.length >= 1 ? argv[0] : "");
         Preconditions.checkArgument(dfonode != null,
             "Context does not have a logical node name");
         DiskFailoverManager dfoman = node.getAddDFOManager(dfonode);
