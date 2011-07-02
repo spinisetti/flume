@@ -168,6 +168,7 @@ public class FlumeConfiguration extends Configuration {
   // Sink/source default options
   public static final String POLLER_QUEUESIZE = "flume.poller.queuesize";
   public static final String THRIFT_QUEUESIZE = "flume.thrift.queuesize";
+  public static final String EXEC_QUEUESIZE = "flume.exec.queuesize";
   public static final String THRIFT_CLOSE_MAX_SLEEP = "flume.thrift.close.maxsleep";
   public static final String THRIFT_SOCKET_TIMEOUT_MS = "flume.thrift.socket.timeout.ms";
   public static final String INSISTENTOPEN_INIT_BACKOFF = "flume.inisistentOpen.init.backoff";
@@ -175,6 +176,7 @@ public class FlumeConfiguration extends Configuration {
   public static final String HISTORY_MAXLENGTH = "flume.history.maxlength";
   public static final String TAIL_POLLPERIOD = "flume.tail.pollperiod";
   public static final String EVENT_RPC_TYPE = "flume.event.rpc";
+
 
   // Collector parameters
   public final static String COLLECTOR_EVENT_HOST = "flume.collector.event.host";
@@ -557,6 +559,14 @@ public class FlumeConfiguration extends Configuration {
     return getInt(THRIFT_QUEUESIZE, 1000);
   }
 
+  /**
+   * Max queue size for an exec source.
+   */
+  public int getExecQueueSize() {
+    return getInt(EXEC_QUEUESIZE, 1000);
+  }
+
+  
   public int getThriftSocketTimeoutMs() {
     return getInt(THRIFT_SOCKET_TIMEOUT_MS, 10000);
   }
