@@ -145,6 +145,10 @@ public class FlumeBuilder {
     return (CommonTree) getDeployParser(s).source().getTree();
   }
 
+  static CommonTree parseFunction(String s) throws RecognitionException {
+    return (CommonTree) getDeployParser(s).function().getTree();
+  }
+
   /**
    * This is for reading and parsing out a full configuration from a file.
    */
@@ -320,6 +324,26 @@ public class FlumeBuilder {
     return buildSink(new Context(), s);
   }
 
+  public static FunctionSpec buildFunction(Context ctx, String s)
+      throws FlumeSpecException {
+    try {
+      CommonTree funcTree = parseFunction(s);
+      return buildFunctionSpec(funcTree);
+    } catch (RecognitionException re) {
+      LOG.debug("Failure to parse and instantiate sink: '" + s + "'", re);
+      throw new FlumeSpecException(re.toString());
+    } catch (NumberFormatException nfe) {
+      LOG.debug("Failure to parse and instantiate sink: '" + s + "'", nfe);
+      throw new FlumeSpecException(nfe.getMessage());
+    } catch (IllegalArgumentException iae) {
+      LOG.debug("Failure to parse and instantiate sink: '" + s + "'", iae);
+      throw new FlumeSpecException(iae.getMessage());
+    } catch (RuntimeRecognitionException re) {
+      LOG.debug("Failure to parse and instantiate sink: '" + s + "'", re);
+      throw new FlumeSpecException(re.getMessage());
+    }
+  }
+
   /**
    * Formats the three pieces to a node configuration back into a single
    * parsable line
@@ -367,20 +391,25 @@ public class FlumeBuilder {
       str = str.substring(1, str.length() - 1);
       return StringEscapeUtils.unescapeJava(str);
     case FUNC:
-      String name = t.getChild(0).getText();
-      List<Object> args = new ArrayList<Object>();
-      int children = t.getChildCount();
-      for (int j = 1; j < children; j++) {
-        args.add(buildSimpleArg((CommonTree) t.getChild(j)));
-      }
-      FunctionSpec funSpec = new FunctionSpec(name, args.toArray());
-      return funSpec;
+      return buildFunctionSpec(t);
     case KWARG:
       return null;
     default:
       throw new FlumeSpecException("Not a node of literal type: "
           + t.toStringTree());
     }
+  }
+
+  static FunctionSpec buildFunctionSpec(CommonTree t) throws FlumeSpecException {
+    String name = t.getChild(0).getText();
+    List<Object> args = new ArrayList<Object>();
+    int children = t.getChildCount();
+    for (int j = 1; j < children; j++) {
+      args.add(buildSimpleArg((CommonTree) t.getChild(j)));
+    }
+    FunctionSpec funSpec = new FunctionSpec(name, args.toArray());
+    return funSpec;
+
   }
 
   /**
@@ -408,22 +437,21 @@ public class FlumeBuilder {
     }
   }
 
-  public static OutputFormat createFormat(FormatFactory ff, Object o ) throws FlumeSpecException {
+  public static OutputFormat createFormat(FormatFactory ff, Object o)
+      throws FlumeSpecException {
     if (o == null) {
       // return the default.
       return ff.createOutputFormat(null);
     }
     if (o instanceof FunctionSpec) {
-      FunctionSpec fs = (FunctionSpec)o;
+      FunctionSpec fs = (FunctionSpec) o;
       return ff.createOutputFormat(fs.getName(), fs.getArgs());
     }
 
     LOG.warn("Deprecated syntax: Expected a format spec but instead "
-        + "had a (" + o.getClass().getSimpleName() + ") "
-        + o.toString());
+        + "had a (" + o.getClass().getSimpleName() + ") " + o.toString());
     return ff.getOutputFormat(o.toString());
   }
-
 
   public static Pair<String, CommonTree> buildKWArg(CommonTree t) {
     ASTNODE type = ASTNODE.valueOf(t.getText()); // convert to enum
@@ -577,11 +605,11 @@ public class FlumeBuilder {
 
         // first is the sub sink spec
         CommonTree ctbody = rollArgs.get(0);
-        String body= FlumeSpecGen.genEventSink(ctbody);
+        String body = FlumeSpecGen.genEventSink(ctbody);
         args.add(body);
 
         // all others are args
-        for (int i =1; i< rollArgs.size(); i++) {
+        for (int i = 1; i < rollArgs.size(); i++) {
           CommonTree tr = rollArgs.get(i);
           Object arg = buildSimpleArg(tr);
           if (arg != null) {

@@ -164,20 +164,22 @@ public class EscapedCustomDfsSink extends EventSink.Base {
           filename = args[1].toString();
         }
 
-        Object format = FlumeConfiguration.get().getDefaultOutputFormat();
-        if (args.length >= 3) {
-          format = args[2];
-        }
-
         OutputFormat o;
+        Object formatSpec = null;
         try {
-          o = FlumeBuilder.createFormat(FormatFactory.get(), format);
+          if (args.length >= 3) {
+            formatSpec = args[2];
+          } else {
+            String sfmt = FlumeConfiguration.get().getDefaultOutputFormat();
+            formatSpec = FlumeBuilder.buildFunction(context, sfmt);
+          }
+          o = FlumeBuilder.createFormat(FormatFactory.get(), formatSpec);
         } catch (FlumeSpecException e) {
-          LOG.warn("Illegal format type " + format + ".", e);
+          LOG.warn("Illegal format type " + formatSpec + ".", e);
           o = null;
         }
-        Preconditions.checkArgument(o != null, "Illegal format type " + format
-            + ".");
+        Preconditions.checkArgument(o != null, "Illegal format type "
+            + formatSpec + ".");
 
         return new EscapedCustomDfsSink(args[0].toString(), filename, o);
       }
